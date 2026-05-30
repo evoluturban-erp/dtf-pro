@@ -195,10 +195,10 @@ async function filtrarClis(){
       +'</div>'
       +'<div style="display:flex;gap:16px;flex-wrap:wrap">'+inf+'</div></div>'
       +'<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
-      +'<button class="btn btn-sm" onclick="editarCli('+c.id+')"><i class="ti ti-edit"></i></button>'
-      +'<button class="btn btn-sm" onclick="verHistCli('+c.id+')"><i class="ti ti-history"></i></button>'
+      +'<button class="btn btn-sm" onclick="editarCli('+c.id+')" title="Editar">Edit</button>'
+      +'<button class="btn btn-sm" onclick="verHistCli('+c.id+')" title="Historico">Hist</button>'
       +sb
-      +'<button class="btn btn-sm btn-r" onclick="remCli('+c.id+')"><i class="ti ti-trash"></i></button>'
+      +'<button class="btn btn-sm btn-r" onclick="remCli('+c.id+')" title="Excluir">Del</button>'
       +'</div></div></div>';
   });
   el.innerHTML=html;
