@@ -327,7 +327,7 @@ function syncData(){
 // AUTH
 // =======================================================
 
-// Usuários padrão - fallback quando localStorage não disponível (Google Sites iframe)
+// Usu\u00E1rios padr\u00E3o - fallback quando localStorage n\u00E3o dispon\u00EDvel (Google Sites iframe)
 const USERS_DEFAULT = [
   {id:1,nome:'Admin',login:'admin',senha:'admin123',perfil:'admin',ativo:true},
   {id:2,nome:'Operador 1',login:'op1',senha:'op1234',perfil:'operador',maquina:1,ativo:true},
@@ -337,7 +337,7 @@ const USERS_DEFAULT = [
 let _usersCache=null;
 
 function getUsers(){
-  // Usar cache se disponível
+  // Usar cache se dispon\u00EDvel
   if(_usersCache) return _usersCache;
   try{
     const saved=store.get('dtf_users');
@@ -388,7 +388,7 @@ function doLogin(){
   const senha=v('l-senha');
   if(!login||!senha){toast('Preencha login e senha');return;}
 
-  // Buscar nos usuários disponíveis (padrão + cadastrados)
+  // Buscar nos usu\u00E1rios dispon\u00EDveis (padr\u00E3o + cadastrados)
   const u = getUsers().find(function(u){return u.login===login&&u.senha===senha;});
 
   if(!u){toast('Login ou senha incorretos');return;}
@@ -429,7 +429,7 @@ function initShell(){
 // =======================================================
 // NAVIGATION
 // =======================================================
-const PAGE_TITLES={dashboard:'Dashboard',alertas:'Alertas',clientes:'Clientes',pedidos:'Pedidos',financeiro:'Financeiro',producao:'Lançar Produção',importar:'Importar Arquivo',insumos:'Insumos',relatorios:'Relatórios',config:'Configurações'};
+const PAGE_TITLES={dashboard:'Dashboard',alertas:'Alertas',clientes:'Clientes',pedidos:'Pedidos',financeiro:'Financeiro',producao:'Lan\u00E7ar Produ\u00E7\u00E3o',importar:'Importar Arquivo',insumos:'Insumos',relatorios:'Relat\u00F3rios',config:'Configura\u00E7\u00F5es'};
 
 function goNav(id){
   NAV=id;
@@ -452,9 +452,9 @@ function toggleMenu(){$('sidebar').classList.toggle('open');}
 let _cliCache=null;
 
 async function getClientes(){
-  // Retornar cache se disponível
+  // Retornar cache se dispon\u00EDvel
   if(_cliCache) return _cliCache;
-  // Tentar store local primeiro (instantâneo)
+  // Tentar store local primeiro (instant\u00E2neo)
   const local=store.get('dtf_clientes');
   if(local&&local.length){_cliCache=local;return _cliCache;}
   // Buscar do Sheets
@@ -483,7 +483,7 @@ function saveClientes(cls){
 }
 
 async function syncCliente(c){
-  // Upsert - atualizar se existir, inserir se não
+  // Upsert - atualizar se existir, inserir se n\u00E3o
   try{
     await fetch(API,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'application/json'},
@@ -567,16 +567,16 @@ async function renderDashboard(){
   const topCli=Object.entries(porCli).sort((a,b)=>b[1].v-a[1].v).slice(0,5);
 
   $('main-content').innerHTML=`
-    ${vencidas.length?`<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>${vencidas.length} cobrança(s) vencida(s)!</strong> - <a href="#" onclick="goNav('alertas')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>`:''}
+    ${vencidas.length?`<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>${vencidas.length} cobran\u00E7a(s) vencida(s)!</strong> - <a href="#" onclick="goNav('alertas')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>`:''}
     <div class="g4" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-l">Produção total</div><div class="kpi-v">${fmt(sum(pd,5))} m</div><div class="kpi-s">${pd.length} turnos</div></div>
+      <div class="kpi"><div class="kpi-l">Produ\u00E7\u00E3o total</div><div class="kpi-v">${fmt(sum(pd,5))} m</div><div class="kpi-s">${pd.length} turnos</div></div>
       <div class="kpi"><div class="kpi-l">Faturamento</div><div class="kpi-v" style="color:var(--green)">${fmtR(sum(pedd,7))}</div><div class="kpi-s">${pedd.length} pedidos</div></div>
       <div class="kpi"><div class="kpi-l">A receber</div><div class="kpi-v">${fmtR(aReceber)}</div><div class="kpi-s">${vencidas.length} vencidas</div></div>
       <div class="kpi"><div class="kpi-l">Clientes</div><div class="kpi-v">${getClientes().length}</div><div class="kpi-s">cadastrados</div></div>
     </div>
     <div class="g2">
       <div class="card">
-        <div class="card-title"><i class="ti ti-printer"></i>produção por impressora</div>
+        <div class="card-title"><i class="ti ti-printer"></i>produ\u00E7\u00E3o por impressora</div>
         ${[['Impressora 1 (AZUL)',sum(m1,5),sum(pd,5),'#2E6DB4'],['Impressora 2 (CINZA)',sum(m2,5),sum(pd,5),'#4A9E4A']].map(([l,v,t,c])=>`
           <div style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
@@ -614,7 +614,7 @@ async function renderDashboard(){
     </div>
 
     <div class="card">
-      <div class="card-title"><i class="ti ti-history"></i>últimos lançamentos de produção</div>
+      <div class="card-title"><i class="ti ti-history"></i>\u00FAltimos lan\u00E7amentos de produ\u00E7\u00E3o</div>
       <div style="overflow-x:auto">
         <table class="tbl">
           <thead><tr><th>Data</th><th>Impressora</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead>
@@ -640,12 +640,12 @@ async function checkStatusDB(){
     const el = document.getElementById('db-status');
     if (!el) return;
 
-    // Última produção por impressora
+    // \u00DAltima produ\u00E7\u00E3o por impressora
     const pd = prod.slice(1);
     const ultAzul  = pd.filter(r => (r[1]||'').includes('AZUL')).pop();
     const ultCinza = pd.filter(r => (r[1]||'').includes('CINZA')).pop();
 
-    // Último pedido importado
+    // \u00DAltimo pedido importado
     const pedd = ped.slice(1);
     const ultPed = pedd[pedd.length - 1];
 
@@ -675,11 +675,11 @@ async function checkStatusDB(){
     el.innerHTML = `
       ${statusCard('Impressora 1 - AZUL',  ultAzul,  2, 4)}
       ${statusCard('Impressora 2 - CINZA', ultCinza, 2, 4)}
-      ${statusCard('Último pedido importado', ultPed, 0, 3)}
+      ${statusCard('\u00DAltimo pedido importado', ultPed, 0, 3)}
       <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
         <i class="ti ti-refresh" style="font-size:20px;color:var(--text3)"></i>
         <div>
-          <p style="font-size:12px;font-weight:500">Última sincronização</p>
+          <p style="font-size:12px;font-weight:500">\u00DAltima sincroniza\u00E7\u00E3o</p>
           <p style="font-size:11px;color:var(--text2)">${new Date().toLocaleString('pt-BR')}</p>
         </div>
         <button class="btn btn-xs" style="margin-left:auto" onclick="syncData()">Atualizar</button>
@@ -710,7 +710,7 @@ async function renderAlertas(){
     if(r[8]==='pago'||r[8]==='recebido') return;
     if(!r[4]) return;
     const d=diffDays(hoje,r[4]);
-    if(d<0) alertas.push({tipo:'r',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu há ${Math.abs(d)} dia(s)`,ts:r[0]});
+    if(d<0) alertas.push({tipo:'r',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu h\u00E1 ${Math.abs(d)} dia(s)`,ts:r[0]});
     else if(d<=2) alertas.push({tipo:'a',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} vence em ${d===0?'hoje':d+' dia(s)'}`,ts:r[0]});
   });
   getClientes().forEach(c=>{
@@ -721,7 +721,7 @@ async function renderAlertas(){
     if(parts.length<3) return;
     const d=diffDays(new Date(parts[2]+'-'+parts[1]+'-'+parts[0]).toISOString().split('T')[0],hoje);
     const lim={semanal:9,quinzenal:17,mensal:32}[c.ciclo]||32;
-    if(d>lim) alertas.push({tipo:'r',msg:`<strong>${c.nome}</strong> - fechamento ${c.ciclo} pendente há ${d} dias`});
+    if(d>lim) alertas.push({tipo:'r',msg:`<strong>${c.nome}</strong> - fechamento ${c.ciclo} pendente h\u00E1 ${d} dias`});
   });
 
   $('main-content').innerHTML=`
@@ -775,7 +775,7 @@ async function filtrarClis(){
             <p style="font-weight:600;font-size:14px">${c.nome}</p>
             <span class="badge ${cc[c.ciclo]||'b-gray'}">${c.ciclo||'avulso'}</span>
             <span class="badge b-g" style="font-weight:600">${fmtR(pa)}/m</span>
-            ${hist.length>1?`<span style="font-size:11px;color:var(--text3)">${hist.length} preços</span>`:''}
+            ${hist.length>1?`<span style="font-size:11px;color:var(--text3)">${hist.length} pre\u00E7os</span>`:''}
           </div>
           <div style="display:flex;gap:16px;flex-wrap:wrap">
             ${c.tel?`<span style="font-size:12px;color:var(--text2)"><i class="ti ti-phone" style="font-size:13px"></i> ${c.tel}</span>`:''}
@@ -804,7 +804,7 @@ async function abrirFormCliente(id=null){
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <p style="font-size:16px;font-weight:600">${c?'Editar '+c.nome:'Novo cliente'}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
     <div class="g2">
       <div class="f"><label>Nome *</label><input id="fc-nome" value="${c?.nome||''}"></div>
@@ -815,9 +815,9 @@ async function abrirFormCliente(id=null){
       <div class="f"><label>E-mail</label><input id="fc-email" value="${c?.email||''}"></div>
     </div>
     <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">
-      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">PREÇO E CONDIÇÕES</p>
+      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">PRE\u00C7O E CONDI\u00C7\u00D5ES</p>
       <div class="g2">
-        <div class="f"><label>Preço por metro (R$) *</label>
+        <div class="f"><label>Pre\u00E7o por metro (R$) *</label>
           <input type="number" id="fc-preco" value="${c?.preco_m||''}" step="0.01" style="font-size:16px;font-weight:600"></div>
         <div class="f"><label>Ciclo de fechamento</label>
           <select id="fc-ciclo">
@@ -831,16 +831,16 @@ async function abrirFormCliente(id=null){
       <div class="g2">
         <div class="f"><label>Forma de pagamento</label>
           <select id="fc-pgto">
-            ${['Pix','Transferência','Boleto','Dinheiro','A combinar'].map(p=>`<option ${c?.pgto===p?'selected':''}>${p}</option>`).join('')}
+            ${['Pix','Transfer\u00EAncia','Boleto','Dinheiro','A combinar'].map(p=>`<option ${c?.pgto===p?'selected':''}>${p}</option>`).join('')}
           </select>
         </div>
         <div class="f"><label>Chave Pix</label><input id="fc-pix" value="${c?.pix||''}"></div>
       </div>
     </div>
-    <div class="f"><label>Observações</label><input id="fc-obs" value="${c?.obs||''}"></div>
+    <div class="f"><label>Observa\u00E7\u00F5es</label><input id="fc-obs" value="${c?.obs||''}"></div>
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn btn-p" onclick="salvarCli()" style="flex:1;justify-content:center">
-        <i class="ti ti-device-floppy"></i> ${c?'Salvar alterações':'Cadastrar cliente'}
+        <i class="ti ti-device-floppy"></i> ${c?'Salvar altera\u00E7\u00F5es':'Cadastrar cliente'}
       </button>
       <button class="btn" onclick="this.closest('.modal-bg').remove()">Cancelar</button>
     </div>
@@ -855,7 +855,7 @@ async function salvarCli(){
   const nome=v('fc-nome').trim();
   const preco=parseFloat(v('fc-preco'))||0;
   if(!nome){toast('Informe o nome');return;}
-  if(!preco){toast('Informe o preço');return;}
+  if(!preco){toast('Informe o pre\u00E7o');return;}
   const cls=getClientes();
   const hoje=new Date().toLocaleDateString('pt-BR');
   const dados={nome,doc:v('fc-doc'),tel:v('fc-tel'),email:v('fc-email'),
@@ -863,7 +863,7 @@ async function salvarCli(){
   if(_editCliId){
     const idx=cls.findIndex(c=>c.id===_editCliId);
     if(idx>-1){
-      const h=cls[idx].historicoPrecos||[{preco:cls[idx].preco_m||0,data:cls[idx].dataCad||hoje,dataVigencia:cls[idx].dataCad||hoje,obs:'Preço inicial'}];
+      const h=cls[idx].historicoPrecos||[{preco:cls[idx].preco_m||0,data:cls[idx].dataCad||hoje,dataVigencia:cls[idx].dataCad||hoje,obs:'Pre\u00E7o inicial'}];
       if(preco!==parseFloat(cls[idx].preco_m||0)){
         h.push({preco,data:hoje,dataVigencia:today(),anterior:cls[idx].preco_m,obs:'Atualizado'});
       }
@@ -872,7 +872,7 @@ async function salvarCli(){
     toast('Cliente atualizado!');
   } else {
     cls.push({id:Date.now(),...dados,dataCad:hoje,
-      historicoPrecos:[{preco,data:hoje,dataVigencia:today(),obs:'Preço inicial'}]});
+      historicoPrecos:[{preco,data:hoje,dataVigencia:today(),obs:'Pre\u00E7o inicial'}]});
     apiPost('clientes',['timestamp','nome','doc','tel','email','ciclo','preco_m','pgto','pix','obs'],
       [nowStr(),nome,v('fc-doc'),v('fc-tel'),v('fc-email'),v('fc-ciclo'),preco,v('fc-pgto'),v('fc-pix'),v('fc-obs')]);
     toast('Cliente cadastrado!');
@@ -905,8 +905,8 @@ async function verHistCli(id){
   m.className='modal-bg';
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Histórico - ${c.nome}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <p style="font-size:16px;font-weight:600">Hist\u00F3rico - ${c.nome}</p>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
     ${hist.length?hist.slice().reverse().map((h,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -920,9 +920,9 @@ async function verHistCli(id){
           <p>Vigente: ${h.dataVigencia||h.data}</p>
           ${i===0?'<span class="badge b-g">atual</span>':''}
         </div>
-      </div>`).join(''):'<p style="color:var(--text3)">Sem histórico.</p>'}
+      </div>`).join(''):'<p style="color:var(--text3)">Sem hist\u00F3rico.</p>'}
     <button class="btn btn-b btn-full" style="margin-top:12px" onclick="this.closest('.modal-bg').remove();abrirNovoPreco(${id})">
-      <i class="ti ti-plus"></i> Novo preço
+      <i class="ti ti-plus"></i> Novo pre\u00E7o
     </button>
   </div>`;
   m.addEventListener('click',e=>{if(e.target===m)m.remove();});
@@ -936,15 +936,15 @@ function abrirNovoPreco(cliId){
   m.className='modal-bg';
   m.innerHTML=`<div class="modal" style="max-width:360px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:15px;font-weight:600">Novo preço - ${c.nome}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <p style="font-size:15px;font-weight:600">Novo pre\u00E7o - ${c.nome}</p>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Preço atual: <strong>${fmtR(c.preco_m||0)}/m</strong></p>
-    <div class="f"><label>Novo preço (R$/m) *</label><input type="number" id="np-preco" step="0.01" style="font-size:18px;font-weight:600"></div>
-    <div class="f"><label>Válido a partir de *</label><input type="date" id="np-vig" value="${today()}"></div>
-    <div class="f"><label>Motivo</label><input id="np-obs" placeholder="Ex: reajuste, negociação..."></div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Pre\u00E7o atual: <strong>${fmtR(c.preco_m||0)}/m</strong></p>
+    <div class="f"><label>Novo pre\u00E7o (R$/m) *</label><input type="number" id="np-preco" step="0.01" style="font-size:18px;font-weight:600"></div>
+    <div class="f"><label>V\u00E1lido a partir de *</label><input type="date" id="np-vig" value="${today()}"></div>
+    <div class="f"><label>Motivo</label><input id="np-obs" placeholder="Ex: reajuste, negocia\u00E7\u00E3o..."></div>
     <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarNovoPreco(${cliId})">
-      <i class="ti ti-check"></i> Confirmar novo preço
+      <i class="ti ti-check"></i> Confirmar novo pre\u00E7o
     </button>
   </div>`;
   m.addEventListener('click',e=>{if(e.target===m)m.remove();});
@@ -954,8 +954,8 @@ function abrirNovoPreco(cliId){
 async function salvarNovoPreco(cliId){
   const preco=parseFloat(v('np-preco'))||0;
   const vig=v('np-vig');
-  if(!preco){toast('Informe o preço');return;}
-  if(!vig){toast('Informe a data de vigência');return;}
+  if(!preco){toast('Informe o pre\u00E7o');return;}
+  if(!vig){toast('Informe a data de vig\u00EAncia');return;}
   const cls=await getClientes();
   const idx=cls.findIndex(c=>c.id===cliId);
   if(idx<0) return;
@@ -966,13 +966,13 @@ async function salvarNovoPreco(cliId){
   cls[idx].preco_m=preco;
   saveClientes(cls);
   apiPost('precos_historico',['timestamp','cliente','preco','data_vigencia','anterior','obs'],[nowStr(),cls[idx].nome,preco,vig,ant,v('np-obs')]);
-  toast(`Preço de ${cls[idx].nome} -> ${fmtR(preco)}/m OK`);
+  toast(`Pre\u00E7o de ${cls[idx].nome} -> ${fmtR(preco)}/m OK`);
   document.querySelector('.modal-bg')?.remove();
   renderClientes();
 }
 
 // =======================================================
-// PRODUÇÃO
+// PRODU\u00C7\u00C3O
 // =======================================================
 async function renderProducao(){
   const isA=CU.perfil==='admin';
@@ -991,7 +991,7 @@ async function renderProducao(){
       <div class="card-title"><i class="ti ti-calendar"></i>turno</div>
       <div class="g3">
         <div class="f"><label>Data</label><input type="date" id="p-data" value="${today()}"></div>
-        <div class="f"><label>Turno</label><select id="p-turno"><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+        <div class="f"><label>Turno</label><select id="p-turno"><option>Manh\u00E3</option><option>Tarde</option><option>Noite</option></select></div>
         <div class="f"><label>Operador</label><input id="p-op" value="${CU.nome}"></div>
       </div>
     </div>
@@ -1002,9 +1002,9 @@ async function renderProducao(){
         <div class="f"><label>Perdas / descartes (m)</label><input type="number" id="p-perdas" placeholder="0" min="0" step="0.1"></div>
       </div>
       <div class="card">
-        <div class="card-title"><i class="ti ti-bolt"></i>energia & manutenção</div>
+        <div class="card-title"><i class="ti ti-bolt"></i>energia & manuten\u00E7\u00E3o</div>
         <div class="f"><label>Energia (kWh)</label><input type="number" id="p-kwh" placeholder="0" min="0" step="0.1"></div>
-        <div class="f"><label>Manutenção (R$)</label><input type="number" id="p-man" placeholder="0" min="0" step="0.01"></div>
+        <div class="f"><label>Manuten\u00E7\u00E3o (R$)</label><input type="number" id="p-man" placeholder="0" min="0" step="0.01"></div>
       </div>
     </div>
     <div class="card">
@@ -1022,20 +1022,20 @@ async function renderProducao(){
         <div class="f"><label>TPU</label><input type="number" id="p-tpu" placeholder="0" min="0" step="1"></div>
         <div class="f"><label>Poliamida</label><input type="number" id="p-pol" placeholder="0" min="0" step="1"></div>
       </div>
-      <div class="f" style="margin-top:4px"><label>Observações</label><input id="p-obs" placeholder="Opcional"></div>
+      <div class="f" style="margin-top:4px"><label>Observa\u00E7\u00F5es</label><input id="p-obs" placeholder="Opcional"></div>
     </div>
     <button class="btn btn-p btn-full" id="btn-sp" onclick="salvarProducao()">
-      <i class="ti ti-device-floppy"></i> Salvar lançamento - Impressora ${maq}
+      <i class="ti ti-device-floppy"></i> Salvar lan\u00E7amento - Impressora ${maq}
     </button>
     <div style="margin-top:16px">
-      <p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Últimos lançamentos</p>
+      <p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">\u00DAltimos lan\u00E7amentos</p>
       <div style="overflow-x:auto">
         <table class="tbl">
           <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead>
           <tbody>${ultimos.length?ultimos.map(r=>`<tr>
             <td>${fmtData(r[2])}</td><td>${r[3]||''}</td><td>${r[4]||''}</td>
             <td><strong>${fmt(r[5])} m</strong></td><td>${fmt(r[13]||0)} m</td><td>${fmt(r[14]||0,1)}</td>
-          </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum lançamento ainda.</td></tr>'}
+          </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum lan\u00E7amento ainda.</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -1051,8 +1051,8 @@ async function salvarProducao(){
   await apiPost('producao',
     ['timestamp','maquina','data','turno','operador','metros','white_g','yellow_g','magenta_g','cyan_g','black_g','tpu_g','poliamida_g','perdas_m','energia_kwh','manutencao_r','obs'],
     [nowStr(),maq,v('p-data'),v('p-turno'),v('p-op'),metros,n('p-tw'),n('p-ty'),n('p-tm'),n('p-tc'),n('p-tk'),n('p-tpu'),n('p-pol'),n('p-perdas'),n('p-kwh'),n('p-man'),v('p-obs')]);
-  toast('Lançamento salvo!');
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lançamento - Impressora '+maq;
+  toast('Lan\u00E7amento salvo!');
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lan\u00E7amento - Impressora '+maq;
   ['p-metros','p-perdas','p-tw','p-ty','p-tm','p-tc','p-tk','p-tpu','p-pol','p-kwh','p-man','p-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
   delete _cache['producao'];
   renderProducao();
@@ -1073,7 +1073,7 @@ async function renderPedidos(){
       <select id="ped-status" onchange="filtrarPedidos()"
         style="padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">
         <option value="">Todos os status</option>
-        <option>Aguardando</option><option>Em produção</option><option>Concluído</option><option>Entregue</option>
+        <option>Aguardando</option><option>Em produ\u00E7\u00E3o</option><option>Conclu\u00EDdo</option><option>Entregue</option>
       </select>
       <button class="btn btn-p btn-sm" onclick="abrirFormPedido()"><i class="ti ti-plus"></i> Novo pedido</button>
     </div>
@@ -1089,11 +1089,11 @@ function filtrarPedidos(){
   let d=window._pedDados||[];
   if(q) d=d.filter(r=>(r[3]||'').toLowerCase().includes(q)||(r[4]||'').toLowerCase().includes(q));
   if(st) d=d.filter(r=>r[9]===st);
-  const sc={Aguardando:'b-a','Em produção':'b-b',Concluído:'b-g',Entregue:'b-g',importado:'b-gray'};
+  const sc={Aguardando:'b-a','Em produ\u00E7\u00E3o':'b-b',Conclu\u00EDdo:'b-g',Entregue:'b-g',importado:'b-gray'};
   const el=$('ped-lista');
   if(!el) return;
   el.innerHTML=`<table class="tbl">
-    <thead><tr><th>Data</th><th>Cliente</th><th>OS / Ref.</th><th>Descrição</th><th>Metros</th><th>Total</th><th>Status</th></tr></thead>
+    <thead><tr><th>Data</th><th>Cliente</th><th>OS / Ref.</th><th>Descri\u00E7\u00E3o</th><th>Metros</th><th>Total</th><th>Status</th></tr></thead>
     <tbody>${d.slice(0,50).map(r=>`<tr>
       <td style="white-space:nowrap">${fmtData(r[1])}</td>
       <td><strong>${r[3]||''}</strong></td>
@@ -1113,11 +1113,11 @@ function abrirFormPedido(){
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <p style="font-size:16px;font-weight:600">Novo pedido</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
     <div class="g2">
       <div class="f"><label>Data</label><input type="date" id="pd-data" value="${today()}"></div>
-      <div class="f"><label>OS / Nº pedido</label><input id="pd-os" placeholder="OS-0042"></div>
+      <div class="f"><label>OS / N\u00BA pedido</label><input id="pd-os" placeholder="OS-0042"></div>
     </div>
     <div class="g2">
       <div class="f"><label>Cliente *</label>
@@ -1130,18 +1130,18 @@ function abrirFormPedido(){
     </div>
     <div class="g3">
       <div class="f"><label>Metros</label><input type="number" id="pd-m" placeholder="0" min="0" step="0.1" oninput="calcPed()"></div>
-      <div class="f"><label>Preço/m (R$)</label><input type="number" id="pd-p" placeholder="0.00" min="0" step="0.01" oninput="calcPed()"></div>
+      <div class="f"><label>Pre\u00E7o/m (R$)</label><input type="number" id="pd-p" placeholder="0.00" min="0" step="0.01" oninput="calcPed()"></div>
       <div class="f"><label>Total (R$)</label><input type="number" id="pd-t" readonly style="background:var(--surface2);font-weight:600"></div>
     </div>
     <div class="g2">
       <div class="f"><label>Status</label>
-        <select id="pd-st"><option>Aguardando</option><option>Em produção</option><option>Concluído</option><option>Entregue</option></select>
+        <select id="pd-st"><option>Aguardando</option><option>Em produ\u00E7\u00E3o</option><option>Conclu\u00EDdo</option><option>Entregue</option></select>
       </div>
-      <div class="f"><label>Período</label>
-        <select id="pd-per"><option>Diário</option><option>Semanal</option><option>Mensal</option><option>Avulso</option></select>
+      <div class="f"><label>Per\u00EDodo</label>
+        <select id="pd-per"><option>Di\u00E1rio</option><option>Semanal</option><option>Mensal</option><option>Avulso</option></select>
       </div>
     </div>
-    <div class="f"><label>Descrição / arte</label><input id="pd-desc" placeholder="Ex: camiseta branca, estampa frontal 30x40"></div>
+    <div class="f"><label>Descri\u00E7\u00E3o / arte</label><input id="pd-desc" placeholder="Ex: camiseta branca, estampa frontal 30x40"></div>
     <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarPedido()">
       <i class="ti ti-device-floppy"></i> Salvar pedido
     </button>
@@ -1220,7 +1220,7 @@ async function finTab(t,btn){
     const sl=(r)=>{const pg=r[8]==='pago'||r[8]==='recebido';const at=!pg&&r[4]&&r[4]<hoje;return pg?'pago':at?'vencido':'pendente';};
     const fil=dados.filter(r=>r[2]===tipo);
     p.innerHTML=`<div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>Cliente/Forn.</th><th>Referência</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Data</th><th>Cliente/Forn.</th><th>Refer\u00EAncia</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
       <tbody>${fil.slice(0,40).map(r=>`<tr>
         <td>${fmtData(r[1])}</td><td><strong>${r[3]||''}</strong></td>
         <td style="font-size:12px;color:var(--text2)">${r[6]||''}</td>
@@ -1243,17 +1243,17 @@ async function finTab(t,btn){
           </select>
         </div>
         <div class="f"><label>De</label><input type="date" id="fech-de" onchange="carregarJobsCliente()"></div>
-        <div class="f"><label>Até</label><input type="date" id="fech-ate" value="${today()}" onchange="carregarJobsCliente()"></div>
+        <div class="f"><label>At\u00E9</label><input type="date" id="fech-ate" value="${today()}" onchange="carregarJobsCliente()"></div>
       </div>
       <div class="f" style="margin-top:4px">
         <label>Conta para recebimento</label>
         <select id="fech-conta">
           <option value="">Selecione a conta...</option>
-          ${contas.map((c,i)=>`<option value="${i}">${c.tipo==='pix'?'Pix':'Transferência'} - ${c.desc} (${c.chave})</option>`).join('')}
+          ${contas.map((c,i)=>`<option value="${i}">${c.tipo==='pix'?'Pix':'Transfer\u00EAncia'} - ${c.desc} (${c.chave})</option>`).join('')}
         </select>
       </div>
       ${!contas.length?`<div class="alert alert-a" style="margin-top:8px"><i class="ti ti-alert-circle"></i>
-        Nenhuma conta cadastrada. <a href="#" onclick="goNav('config')" style="color:var(--amber)">Cadastre em Configurações.</a>
+        Nenhuma conta cadastrada. <a href="#" onclick="goNav('config')" style="color:var(--amber)">Cadastre em Configura\u00E7\u00F5es.</a>
       </div>`:''}
     </div>
     <div id="fech-jobs-panel"></div>
@@ -1273,9 +1273,9 @@ async function finTab(t,btn){
       <div class="g3">
         <div class="f"><label>Valor (R$)</label><input type="number" id="nc-val" placeholder="0.00" step="0.01"></div>
         <div class="f"><label>Vencimento</label><input type="date" id="nc-venc"></div>
-        <div class="f"><label>Forma pgto</label><select id="nc-pgto"><option>Pix</option><option>Transferência</option><option>Boleto</option><option>Dinheiro</option></select></div>
+        <div class="f"><label>Forma pgto</label><select id="nc-pgto"><option>Pix</option><option>Transfer\u00EAncia</option><option>Boleto</option><option>Dinheiro</option></select></div>
       </div>
-      <div class="f"><label>Referência</label><input id="nc-ref" placeholder="Ex: Fechamento semanal, OS-042..."></div>
+      <div class="f"><label>Refer\u00EAncia</label><input id="nc-ref" placeholder="Ex: Fechamento semanal, OS-042..."></div>
       <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarConta()">
         <i class="ti ti-device-floppy"></i> Salvar conta
       </button>
@@ -1287,7 +1287,7 @@ async function darBaixa(ts){
   // Buscar dados da conta
   const rows = await apiGet('financeiro');
   const conta = rows.slice(1).find(r=>r[0]===ts);
-  if(!conta){toast('Conta não encontrada');return;}
+  if(!conta){toast('Conta n\u00E3o encontrada');return;}
   const valorTotal = parseFloat(conta[5])||0;
   const cliente = conta[3]||'';
 
@@ -1297,7 +1297,7 @@ async function darBaixa(ts){
   m.innerHTML=`<div class="modal" style="max-width:380px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <p style="font-size:16px;font-weight:600">Registrar pagamento</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
     <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px">
       <p style="font-size:12px;color:var(--text2)">Cliente: <strong>${cliente}</strong></p>
@@ -1315,18 +1315,18 @@ async function darBaixa(ts){
       <input type="number" id="baixa-valor" placeholder="0,00" min="0" step="0.01"
         style="font-size:16px;font-weight:600" max="${valorTotal}">
       <span style="font-size:11px;color:var(--text3);margin-top:2px">
-        Saldo restante ficará como devedor para o próximo fechamento
+        Saldo restante ficar\u00E1 como devedor para o pr\u00F3ximo fechamento
       </span>
     </div>
     <div class="f">
       <label>Forma de pagamento</label>
       <select id="baixa-pgto">
-        <option>Pix</option><option>Transferência</option>
+        <option>Pix</option><option>Transfer\u00EAncia</option>
         <option>Dinheiro</option><option>Boleto</option>
       </select>
     </div>
     <div class="f">
-      <label>Observação</label>
+      <label>Observa\u00E7\u00E3o</label>
       <input id="baixa-obs" placeholder="Opcional">
     </div>
     <button class="btn btn-p btn-full" style="margin-top:4px"
@@ -1353,7 +1353,7 @@ async function confirmarBaixa(ts, cliente, valorTotal){
   if(tipo==='parcial'){
     valorPago=parseFloat(v('baixa-valor'))||0;
     if(!valorPago||valorPago<=0){toast('Informe o valor pago');return;}
-    if(valorPago>valorTotal){toast('Valor pago não pode ser maior que o total');return;}
+    if(valorPago>valorTotal){toast('Valor pago n\u00E3o pode ser maior que o total');return;}
   }
 
   const saldo=Math.round((valorTotal-valorPago)*100)/100;
@@ -1368,7 +1368,7 @@ async function confirmarBaixa(ts, cliente, valorTotal){
   const idx=cls.findIndex(c=>c.nome===cliente);
   const cli=idx>=0?cls[idx]:null;
 
-  // Inicializar histórico de pagamentos se não existir
+  // Inicializar hist\u00F3rico de pagamentos se n\u00E3o existir
   if(idx>=0){
     if(!cls[idx].historicoPagamentos) cls[idx].historicoPagamentos=[];
     cls[idx].historicoPagamentos.push({
@@ -1392,9 +1392,9 @@ async function confirmarBaixa(ts, cliente, valorTotal){
       ['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],
       [nowStr(),today(),'receber',cliente,proxVenc,saldo,
        `Saldo devedor (pago ${fmtR(valorPago)} de ${fmtR(valorTotal)})`,
-       pgto,'pendente','saldo devedor automático']);
+       pgto,'pendente','saldo devedor autom\u00E1tico']);
 
-    // Perguntar se quer enviar WhatsApp de atualização
+    // Perguntar se quer enviar WhatsApp de atualiza\u00E7\u00E3o
     document.querySelector('.modal-bg')?.remove();
     delete _cache['financeiro'];
     renderFinanceiro();
@@ -1419,7 +1419,7 @@ function abrirModalAtualizacaoSaldo(cliente, valorPago, saldoAtual){
   m.innerHTML=`<div class="modal" style="max-width:400px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <p style="font-size:16px;font-weight:600">Pagamento registrado!</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
 
     <div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:12px;margin-bottom:12px">
@@ -1434,7 +1434,7 @@ function abrirModalAtualizacaoSaldo(cliente, valorPago, saldoAtual){
     </div>
 
     <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
-      Deseja enviar uma mensagem de atualização de saldo para <strong>${cliente}</strong>?
+      Deseja enviar uma mensagem de atualiza\u00E7\u00E3o de saldo para <strong>${cliente}</strong>?
     </p>
 
     <div class="f">
@@ -1451,7 +1451,7 @@ function abrirModalAtualizacaoSaldo(cliente, valorPago, saldoAtual){
         <i class="ti ti-brand-whatsapp"></i> Enviar no WhatsApp
       </button>
       <button class="btn" onclick="this.closest('.modal-bg').remove()" style="flex:1;justify-content:center">
-        Agora não
+        Agora n\u00E3o
       </button>
     </div>
   </div>`;
@@ -1479,14 +1479,14 @@ function enviarAtualizacaoSaldo(cliente, valorPago, saldoAtual){
 async function verHistoricoPagamentos(nomeCliente){
   const cls=await getClientes();
   const cli=cls.find(c=>c.nome===nomeCliente);
-  if(!cli){toast('Cliente não encontrado');return;}
+  if(!cli){toast('Cliente n\u00E3o encontrado');return;}
   const hist=cli.historicoPagamentos||[];
   const m=document.createElement('div');
   m.className='modal-bg';
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Histórico de pagamentos - ${nomeCliente}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
+      <p style="font-size:16px;font-weight:600">Hist\u00F3rico de pagamentos - ${nomeCliente}</p>
+      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
     </div>
     ${cli.saldoDevedor>0?`
     <div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
@@ -1499,7 +1499,7 @@ async function verHistoricoPagamentos(nomeCliente){
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;font-size:13px">
         <div>
           <p style="font-weight:500">${fmtR(h.valorPago)} <span style="font-size:11px;color:var(--text3)">${h.pgto||''}</span></p>
-          <p style="font-size:11px;color:var(--text2)">${h.data} . saldo após: ${fmtR(h.saldoDepois)}</p>
+          <p style="font-size:11px;color:var(--text2)">${h.data} . saldo ap\u00F3s: ${fmtR(h.saldoDepois)}</p>
           ${h.obs?`<p style="font-size:11px;color:var(--text3)">${h.obs}</p>`:''}
         </div>
         <span class="badge ${h.saldoDepois>0?'b-a':'b-g'}">${h.saldoDepois>0?'parcial':'quitado'}</span>
@@ -1525,7 +1525,7 @@ async function salvarConta(){
   toast('Conta salva!');delete _cache['financeiro'];renderFinanceiro();
 }
 
-// Contas bancárias
+// Contas banc\u00E1rias
 let _contasCache=null;
 
 async function getContas(){
@@ -1560,7 +1560,7 @@ async function syncConta(c){
 
 async function addConta(){
   const tipo=v('cc-tipo'),desc=v('cc-desc').trim(),chave=v('cc-chave').trim(),fav=v('cc-fav').trim();
-  if(!desc||!chave){toast('Preencha descrição e chave/dados');return;}
+  if(!desc||!chave){toast('Preencha descri\u00E7\u00E3o e chave/dados');return;}
   const contas=await getContas();
   const nova={id:Date.now(),tipo,desc,chave,fav};
   contas.push(nova);
@@ -1615,7 +1615,7 @@ async function carregarJobsCliente(){
   });
 
   if(!_jobsFechamento.length){
-    el.innerHTML='<div class="alert alert-a"><i class="ti ti-info-circle"></i>Nenhum job encontrado para este cliente no período.</div>';
+    el.innerHTML='<div class="alert alert-a"><i class="ti ti-info-circle"></i>Nenhum job encontrado para este cliente no per\u00EDodo.</div>';
     return;
   }
 
@@ -1629,7 +1629,7 @@ async function carregarJobsCliente(){
 
   el.innerHTML=`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:0"><i class="ti ti-list-check"></i>selecionar jobs para cobrança</div>
+      <div class="card-title" style="margin-bottom:0"><i class="ti ti-list-check"></i>selecionar jobs para cobran\u00E7a</div>
       <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="sel-todos-fech" checked onchange="toggleTodosFech(this.checked)">
         Selecionar todos (${_jobsFechamento.length})
@@ -1653,7 +1653,7 @@ async function carregarJobsCliente(){
     <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px" id="fech-totais">
     </div>
     <button class="btn btn-p btn-full" style="margin-top:10px" onclick="confirmarFechamento()">
-      <i class="ti ti-file-invoice"></i> Gerar documento de cobrança
+      <i class="ti ti-file-invoice"></i> Gerar documento de cobran\u00E7a
     </button>
   </div>`;
 
@@ -1722,11 +1722,11 @@ function confirmarFechamento(){
 
   el.innerHTML=`
     <div class="card" id="doc-fechamento" style="margin-top:0">
-      <!-- Cabeçalho do documento -->
+      <!-- Cabe\u00E7alho do documento -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)">
         <div>
           <p style="font-size:20px;font-weight:700">DTF Pro</p>
-          <p style="font-size:12px;color:var(--text2)">Documento de Cobrança</p>
+          <p style="font-size:12px;color:var(--text2)">Documento de Cobran\u00E7a</p>
         </div>
         <div style="text-align:right">
           <p style="font-size:12px;color:var(--text2)">Emitido em ${new Date().toLocaleDateString('pt-BR')}</p>
@@ -1774,7 +1774,7 @@ function confirmarFechamento(){
           <span style="color:var(--text2)">Total metragem:</span><strong>${fmt(totM)} m</strong>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-          <span style="color:var(--text2)">Subtotal serviços:</span><strong>${fmtR(totServicos)}</strong>
+          <span style="color:var(--text2)">Subtotal servi\u00E7os:</span><strong>${fmtR(totServicos)}</strong>
         </div>
         ${saldoDevedor>0?`
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--amber)">
@@ -1789,13 +1789,13 @@ function confirmarFechamento(){
       <!-- Dados para pagamento -->
       ${conta?`<div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 14px;margin-top:14px">
         <p style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:4px">Dados para pagamento</p>
-        <p style="font-size:13px;font-weight:500">${conta.tipo==='pix'?'Pix':'Transferência Bancária'} - ${conta.desc}</p>
+        <p style="font-size:13px;font-weight:500">${conta.tipo==='pix'?'Pix':'Transfer\u00EAncia Banc\u00E1ria'} - ${conta.desc}</p>
         <p style="font-size:14px;font-weight:700;color:var(--green)">${conta.chave}</p>
         ${conta.fav?`<p style="font-size:12px;color:var(--green)">Favorecido: ${conta.fav}</p>`:''}
       </div>`:''}
     </div>
 
-    <!-- Botões de ação -->
+    <!-- Bot\u00F5es de a\u00E7\u00E3o -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
       <button class="btn btn-p" onclick="imprimirFech()" style="justify-content:center">
         <i class="ti ti-printer"></i> Imprimir
@@ -1810,14 +1810,14 @@ function confirmarFechamento(){
     </div>
     <button class="btn btn-p btn-full" style="margin-top:8px" 
       onclick="lancarContaReceber('${cliNome}',${totV},'${venc}','${conta?conta.desc:''}')">
-      <i class="ti ti-currency-dollar"></i> Lançar no financeiro como conta a receber
+      <i class="ti ti-currency-dollar"></i> Lan\u00E7ar no financeiro como conta a receber
     </button>`;
 }
 
 function calcVencimento(ciclo, dataRef){
   const d = new Date(dataRef || today());
   if(ciclo==='semanal'){
-    // Próxima sexta
+    // Pr\u00F3xima sexta
     const diff = (5 - d.getDay() + 7) % 7 || 7;
     d.setDate(d.getDate() + diff);
   } else if(ciclo==='quinzenal'){
@@ -1836,7 +1836,7 @@ function salvarPDFFech(nome){
   const el=$('doc-fechamento');
   if(!el){toast('Gere o fechamento primeiro');return;}
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Cobrança ${nome}</title>
+  <title>Cobran\u00E7a ${nome}</title>
   <style>
     body{font-family:Arial,sans-serif;font-size:13px;padding:2rem;max-width:600px;margin:0 auto}
     table{width:100%;border-collapse:collapse}
@@ -1904,10 +1904,10 @@ async function lerArqImp(file){
   const reader=new FileReader();
   reader.onload=async function(e){
     try{
-      if(typeof XLSX==='undefined'){toast('Biblioteca XLSX não carregada');return;}
+      if(typeof XLSX==='undefined'){toast('Biblioteca XLSX n\u00E3o carregada');return;}
       var wb=XLSX.read(e.target.result,{type:'binary'});
       var ws=wb.Sheets['GERAL'];
-      if(!ws){toast('Aba GERAL não encontrada');return;}
+      if(!ws){toast('Aba GERAL n\u00E3o encontrada');return;}
       var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       await mostrarPreviewImp(rows,file.name);
     }catch(err){toast('Erro ao ler: '+err.message);}
@@ -1953,8 +1953,8 @@ async function mostrarPreviewImp(rows,nome){
         </div>
       </div>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:10px;margin-bottom:10px;font-size:12px;color:var(--text2)">
-        <i class="ti ti-info-circle"></i> Economia vs método simples: <strong style="color:var(--green)">-${fmt(totSim-totM,2)} m</strong>
-        (${totSim?((totSim-totM)/totSim*100).toFixed(1):0}% de redução na metragem cobrada)
+        <i class="ti ti-info-circle"></i> Economia vs m\u00E9todo simples: <strong style="color:var(--green)">-${fmt(totSim-totM,2)} m</strong>
+        (${totSim?((totSim-totM)/totSim*100).toFixed(1):0}% de redu\u00E7\u00E3o na metragem cobrada)
       </div>
       <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:8px">
         <input type="checkbox" id="sel-todos" checked onchange="_impDados.forEach(d=>d.sel=this.checked);mostrarTabelaImp()">
@@ -1972,7 +1972,7 @@ async function mostrarPreviewImp(rows,nome){
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn btn-p" onclick="confirmarImp()" style="flex:1;justify-content:center">
-          <i class="ti ti-rocket"></i> Lançar pedidos selecionados
+          <i class="ti ti-rocket"></i> Lan\u00E7ar pedidos selecionados
         </button>
         <button class="btn" onclick="$('imp-preview').innerHTML=''">Cancelar</button>
       </div>
@@ -2014,18 +2014,18 @@ async function confirmarImp(){
   const sel=_impDados.filter(d=>d.sel);
   if(!sel.length){toast('Nenhum job selecionado');return;}
   const btn=document.querySelector('#imp-preview .btn-p');
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Lançando...';}
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Lan\u00E7ando...';}
   let ok=0;
   for(const d of sel){
     await apiPost('pedidos',
       ['timestamp','data','periodo','cliente','num_pedido','metros','preco_m','total','maquina','status','descricao','obs'],
-      [nowStr(),d.data.split(' ')[0],'importado',d.cliente,'',d.met,d.vm,d.val,d.imp,'Concluído',d.arquivo,d.obs]);
+      [nowStr(),d.data.split(' ')[0],'importado',d.cliente,'',d.met,d.vm,d.val,d.imp,'Conclu\u00EDdo',d.arquivo,d.obs]);
     ok++;
     await new Promise(r=>setTimeout(r,80));
   }
-  toast(`${ok} pedidos lançados! OK`);
+  toast(`${ok} pedidos lan\u00E7ados! OK`);
   $('imp-preview').innerHTML=`<div class="alert alert-g" style="margin-top:10px">
-    <i class="ti ti-circle-check"></i><strong>${ok} pedidos importados com sucesso</strong> - metragem calculada pela fórmula de grade.
+    <i class="ti ti-circle-check"></i><strong>${ok} pedidos importados com sucesso</strong> - metragem calculada pela f\u00F3rmula de grade.
   </div>`;
 }
 
@@ -2040,14 +2040,14 @@ async function renderInsumos(){
         <div class="card-title"><i class="ti ti-truck"></i>registrar entrada</div>
         <div class="g2">
           <div class="f"><label>Data</label><input type="date" id="ins-data" value="${today()}"></div>
-          <div class="f"><label>Nº NF</label><input id="ins-nf" placeholder="NF-001234"></div>
+          <div class="f"><label>N\u00BA NF</label><input id="ins-nf" placeholder="NF-001234"></div>
         </div>
         <div class="f"><label>Fornecedor</label><input id="ins-forn" placeholder="Nome do fornecedor"></div>
         <div class="g2">
           <div class="f"><label>Material</label>
             <select id="ins-mat"><option>Filme DTF 60cm</option><option>Tinta White</option>
               <option>Tinta Yellow</option><option>Tinta Magenta</option><option>Tinta Cyan</option>
-              <option>Tinta Black</option><option>TPU (pó)</option><option>Poliamida</option><option>Outro</option></select>
+              <option>Tinta Black</option><option>TPU (p\u00F3)</option><option>Poliamida</option><option>Outro</option></select>
           </div>
           <div class="f"><label>Unidade</label>
             <select id="ins-unid"><option>metros</option><option>kg</option><option>litros</option><option>unidade</option></select>
@@ -2055,13 +2055,13 @@ async function renderInsumos(){
         </div>
         <div class="g3">
           <div class="f"><label>Quantidade</label><input type="number" id="ins-qtd" placeholder="0" oninput="calcIns()"></div>
-          <div class="f"><label>Preço unit. (R$)</label><input type="number" id="ins-preco" placeholder="0.00" oninput="calcIns()"></div>
+          <div class="f"><label>Pre\u00E7o unit. (R$)</label><input type="number" id="ins-preco" placeholder="0.00" oninput="calcIns()"></div>
           <div class="f"><label>Subtotal</label><input type="number" id="ins-sub" readonly style="background:var(--surface2);font-weight:600"></div>
         </div>
         <button class="btn btn-p btn-full" onclick="salvarInsumo()"><i class="ti ti-device-floppy"></i> Registrar entrada</button>
       </div>
       <div class="card">
-        <div class="card-title"><i class="ti ti-history"></i>últimas entradas</div>
+        <div class="card-title"><i class="ti ti-history"></i>\u00FAltimas entradas</div>
         <div style="overflow-x:auto">
           <table class="tbl" style="font-size:12px">
             <thead><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Subtotal</th></tr></thead>
@@ -2091,7 +2091,7 @@ async function salvarInsumo(){
 }
 
 // =======================================================
-// RELATÓRIOS
+// RELAT\u00D3RIOS
 // =======================================================
 function renderRelatorios(){
   $('main-content').innerHTML=`
@@ -2100,7 +2100,7 @@ function renderRelatorios(){
         <div class="card" style="cursor:pointer" onclick="gerarRelProducao()">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
             <i class="ti ti-printer" style="font-size:24px;color:var(--text2)"></i>
-            <p style="font-weight:600;font-size:14px">Produção</p>
+            <p style="font-weight:600;font-size:14px">Produ\u00E7\u00E3o</p>
           </div>
           <p style="font-size:12px;color:var(--text2)">Metragem, perdas e aproveitamento por impressora</p>
           <div style="margin-top:10px;display:flex;gap:6px">
@@ -2113,7 +2113,7 @@ function renderRelatorios(){
             <i class="ti ti-users" style="font-size:24px;color:var(--text2)"></i>
             <p style="font-weight:600;font-size:14px">Por cliente</p>
           </div>
-          <p style="font-size:12px;color:var(--text2)">Faturamento, ticket médio e ranking</p>
+          <p style="font-size:12px;color:var(--text2)">Faturamento, ticket m\u00E9dio e ranking</p>
           <div style="margin-top:10px;display:flex;gap:6px">
             <button class="btn btn-sm btn-b"><i class="ti ti-eye"></i> Ver</button>
             <button class="btn btn-sm"><i class="ti ti-download"></i> CSV</button>
@@ -2126,7 +2126,7 @@ function renderRelatorios(){
             <i class="ti ti-currency-dollar" style="font-size:24px;color:var(--text2)"></i>
             <p style="font-weight:600;font-size:14px">Financeiro</p>
           </div>
-          <p style="font-size:12px;color:var(--text2)">A receber, pagar e saldo do período</p>
+          <p style="font-size:12px;color:var(--text2)">A receber, pagar e saldo do per\u00EDodo</p>
           <div style="margin-top:10px;display:flex;gap:6px">
             <button class="btn btn-sm btn-b" onclick="gerarRelFinanceiro()"><i class="ti ti-eye"></i> Ver</button>
             <button class="btn btn-sm" onclick="exportCSV('financeiro')"><i class="ti ti-download"></i> CSV</button>
@@ -2156,7 +2156,7 @@ async function gerarRelProducao(){
   const m2=pd.filter(r=>(r[1]||'').includes('CINZA'));
   $('rel-output').innerHTML=`<div class="card">
     <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-      <p style="font-weight:600;font-size:15px">Relatório de Produção</p>
+      <p style="font-weight:600;font-size:15px">Relat\u00F3rio de Produ\u00E7\u00E3o</p>
       <button class="btn btn-sm" onclick="window.print()"><i class="ti ti-printer"></i> Imprimir</button>
     </div>
     <div class="g4" style="margin-bottom:12px">
@@ -2189,9 +2189,9 @@ async function gerarRelClientes(){
   const sorted=Object.entries(por).sort((a,b)=>b[1].v-a[1].v);
   const totV=sorted.reduce((s,[,d])=>s+d.v,0);
   $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatório por Cliente</p>
+    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio por Cliente</p>
     <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Cliente</th><th>Jobs</th><th>Metragem</th><th>Faturamento</th><th>Ticket médio</th><th>% do total</th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Jobs</th><th>Metragem</th><th>Faturamento</th><th>Ticket m\u00E9dio</th><th>% do total</th></tr></thead>
       <tbody>${sorted.map(([n,d])=>`<tr>
         <td><strong>${n}</strong></td><td>${d.jobs}</td>
         <td>${fmt(d.m)} m</td>
@@ -2209,14 +2209,14 @@ async function gerarRelFinanceiro(){
   const rec=d.filter(r=>r[2]==='receber'),pag=d.filter(r=>r[2]==='pagar');
   const sumV=a=>a.reduce((s,r)=>s+(parseFloat(r[5])||0),0);
   $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatório Financeiro</p>
+    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio Financeiro</p>
     <div class="g3" style="margin-bottom:12px">
       <div class="kpi"><div class="kpi-l">Total a receber</div><div class="kpi-v" style="color:var(--green)">${fmtR(sumV(rec))}</div></div>
       <div class="kpi"><div class="kpi-l">Total a pagar</div><div class="kpi-v" style="color:var(--red)">${fmtR(sumV(pag))}</div></div>
       <div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">${fmtR(sumV(rec)-sumV(pag))}</div></div>
     </div>
     <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>Tipo</th><th>Cliente/Forn.</th><th>Referência</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
+      <thead><tr><th>Data</th><th>Tipo</th><th>Cliente/Forn.</th><th>Refer\u00EAncia</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
       <tbody>${d.map(r=>`<tr>
         <td>${r[1]||''}</td>
         <td><span class="badge ${r[2]==='receber'?'b-g':'b-r'}">${r[2]}</span></td>
@@ -2233,9 +2233,9 @@ async function gerarRelInsumos(){
   const d=rows.slice(1);
   const tot=d.reduce((s,r)=>s+(parseFloat(r[8])||0),0);
   $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatório de Insumos - Total: ${fmtR(tot)}</p>
+    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio de Insumos - Total: ${fmtR(tot)}</p>
     <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>NF</th><th>Fornecedor</th><th>Material</th><th>Qtd</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
+      <thead><tr><th>Data</th><th>NF</th><th>Fornecedor</th><th>Material</th><th>Qtd</th><th>Pre\u00E7o unit.</th><th>Subtotal</th></tr></thead>
       <tbody>${d.map(r=>`<tr>
         <td>${r[1]||''}</td><td>${fmtData(r[2])}</td><td>${r[3]||''}</td><td>${r[4]||''}</td>
         <td>${fmt(r[6])} ${r[5]||''}</td><td>${fmtR(r[7])}</td><td><strong>${fmtR(r[8])}</strong></td>
@@ -2264,7 +2264,7 @@ function renderConfig(){
     <div class="card">
       <div class="card-title"><i class="ti ti-shield"></i>visibilidade para operadores</div>
       ${[['ocultar_valores','Ocultar todos os valores financeiros'],
-         ['ocultar_preco','Ocultar preço/m dos clientes'],
+         ['ocultar_preco','Ocultar pre\u00E7o/m dos clientes'],
          ['ocultar_total','Ocultar valor total dos pedidos']].map(([k,l])=>`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
           <span style="font-size:13px">${l}</span>
@@ -2274,9 +2274,9 @@ function renderConfig(){
         </div>`).join('')}
     </div>
     <div class="card">
-      <div class="card-title"><i class="ti ti-users"></i>usuários</div>
+      <div class="card-title"><i class="ti ti-users"></i>usu\u00E1rios</div>
       <table class="tbl" style="margin-bottom:12px">
-        <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Máquina</th><th>Acesso</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>M\u00E1quina</th><th>Acesso</th><th></th></tr></thead>
         <tbody>${usrs.map(u=>`<tr style="${u.ativo===false?'opacity:.6':''}">
           <td><strong>${u.nome}</strong></td>
           <td><code style="font-size:12px;background:var(--surface2);padding:1px 6px;border-radius:4px">${u.login}</code></td>
@@ -2293,7 +2293,7 @@ function renderConfig(){
           <td>${u.id!==CU.id?`<button class="btn btn-xs btn-r" onclick="remUser(${u.id})"><i class="ti ti-trash"></i></button>`:''}</td>
         </tr>`).join('')}</tbody>
       </table>
-      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar usuário</p>
+      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar usu\u00E1rio</p>
       <div class="g3">
         <div class="f"><label>Nome</label><input id="un-nome"></div>
         <div class="f"><label>Login</label><input id="un-login"></div>
@@ -2301,20 +2301,20 @@ function renderConfig(){
       </div>
       <div class="g2">
         <div class="f"><label>Perfil</label><select id="un-perfil"><option value="operador">Operador</option><option value="admin">Admin</option></select></div>
-        <div class="f"><label>Máquina</label><select id="un-maq"><option value="1">Impressora 1</option><option value="2">Impressora 2</option></select></div>
+        <div class="f"><label>M\u00E1quina</label><select id="un-maq"><option value="1">Impressora 1</option><option value="2">Impressora 2</option></select></div>
       </div>
       <button class="btn btn-p btn-sm" onclick="addUser()"><i class="ti ti-plus"></i> Adicionar</button>
     </div>
     <div class="card">
       <div class="card-title"><i class="ti ti-database-export"></i>backup completo</div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
-        Gera um arquivo Excel com todos os dados: clientes, pedidos, financeiro, produção e insumos.
+        Gera um arquivo Excel com todos os dados: clientes, pedidos, financeiro, produ\u00E7\u00E3o e insumos.
         Salve em local seguro regularmente.
       </p>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
         <i class="ti ti-info-circle" style="font-size:18px;color:var(--text2);flex-shrink:0"></i>
         <p style="font-size:12px;color:var(--text2)">
-          O arquivo gerado contém: <strong>Resumo . Clientes . Pedidos . Financeiro . Produção . Insumos</strong>
+          O arquivo gerado cont\u00E9m: <strong>Resumo . Clientes . Pedidos . Financeiro . Produ\u00E7\u00E3o . Insumos</strong>
           - uma aba por tipo de dado.
         </p>
       </div>
@@ -2322,13 +2322,13 @@ function renderConfig(){
         <i class="ti ti-database-export"></i> Fazer backup agora
       </button>
       <p style="font-size:11px;color:var(--text3);margin-top:8px">
-        O arquivo será baixado com a data no nome: backup_dtf_DDMMAAAA.xlsx
+        O arquivo ser\u00E1 baixado com a data no nome: backup_dtf_DDMMAAAA.xlsx
       </p>
     </div>
     <div class="card">
       <div class="card-title"><i class="ti ti-wallet"></i>minhas contas para recebimento</div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:10px">
-        Cadastre suas contas Pix e bancárias. Na hora do fechamento você escolhe qual usar.
+        Cadastre suas contas Pix e banc\u00E1rias. Na hora do fechamento voc\u00EA escolhe qual usar.
       </p>
       <div id="lista-contas-config"></div>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-top:10px">
@@ -2337,20 +2337,20 @@ function renderConfig(){
           <div class="f"><label>Tipo</label>
             <select id="cc-tipo">
               <option value="pix">Pix</option>
-              <option value="transferencia">Transferência</option>
+              <option value="transferencia">Transfer\u00EAncia</option>
               <option value="dinheiro">Dinheiro</option>
             </select>
           </div>
-          <div class="f"><label>Descrição</label>
+          <div class="f"><label>Descri\u00E7\u00E3o</label>
             <input id="cc-desc" placeholder="Ex: Pix principal, Banco X...">
           </div>
           <div class="f"><label>Chave / Dados</label>
-            <input id="cc-chave" placeholder="CPF, e-mail, telefone, agência/conta...">
+            <input id="cc-chave" placeholder="CPF, e-mail, telefone, ag\u00EAncia/conta...">
           </div>
         </div>
         <div class="f">
           <label>Nome do favorecido</label>
-          <input id="cc-fav" placeholder="Nome que aparecerá no documento de cobrança">
+          <input id="cc-fav" placeholder="Nome que aparecer\u00E1 no documento de cobran\u00E7a">
         </div>
         <button class="btn btn-p btn-sm" style="margin-top:4px" onclick="addConta()">
           <i class="ti ti-plus"></i> Adicionar conta
@@ -2377,13 +2377,13 @@ function addUser(){
   const nome=v('un-nome').trim(),login=v('un-login').trim(),senha=v('un-senha').trim();
   if(!nome||!login||!senha){toast('Preencha todos os campos');return;}
   const usrs=getUsers();
-  if(usrs.find(u=>u.login===login)){toast('Login já existe');return;}
+  if(usrs.find(u=>u.login===login)){toast('Login j\u00E1 existe');return;}
   const novoUser={id:Date.now(),nome,login,senha,perfil:v('un-perfil'),maquina:parseInt(v('un-maq')),ativo:true};
   usrs.push(novoUser);
   store.set('dtf_users',usrs);
   _usersCache=usrs;
   syncUser(novoUser);
-  toast('Usuário adicionado!');renderConfig();
+  toast('Usu\u00E1rio adicionado!');renderConfig();
 }
 
 function remUser(id){
@@ -2412,7 +2412,7 @@ function toggleAcesso(id){
 function setTheme(t){
   document.documentElement.setAttribute('data-theme', t==='light'?'':t);
   store.set('dtf_theme', t);
-  // Atualizar visual dos botões
+  // Atualizar visual dos bot\u00F5es
   ['light','dark','dtf'].forEach(id=>{
     const btn = document.getElementById('theme-'+id);
     if(!btn) return;
@@ -2444,10 +2444,10 @@ async function fazerBackup(){
       apiGet('clientes', true),
     ]);
 
-    // Clientes locais (mais completo - tem histórico de preços)
+    // Clientes locais (mais completo - tem hist\u00F3rico de pre\u00E7os)
     const clientes_local = getClientes();
 
-    if(typeof XLSX === 'undefined'){ toast('Erro: biblioteca não carregada'); return; }
+    if(typeof XLSX === 'undefined'){ toast('Erro: biblioteca n\u00E3o carregada'); return; }
 
     const wb = XLSX.utils.book_new();
 
@@ -2458,8 +2458,8 @@ async function fazerBackup(){
       ['DTF Pro - Backup de Dados'],
       ['Gerado em:', hoje],
       [''],
-      ['Fonte', 'Registros', 'Informação'],
-      ['Produção',    prod.slice(1).length,    fmt(sumP(prod,5),2)+' m produzidos'],
+      ['Fonte', 'Registros', 'Informa\u00E7\u00E3o'],
+      ['Produ\u00E7\u00E3o',    prod.slice(1).length,    fmt(sumP(prod,5),2)+' m produzidos'],
       ['Pedidos',     ped.slice(1).length,      'R$ '+sumP(ped,7).toLocaleString('pt-BR',{minimumFractionDigits:2})],
       ['Financeiro',  fin.slice(1).length,      ''],
       ['Insumos',     ins.slice(1).length,      'R$ '+sumP(ins,8).toLocaleString('pt-BR',{minimumFractionDigits:2})],
@@ -2470,7 +2470,7 @@ async function fazerBackup(){
     XLSX.utils.book_append_sheet(wb, ws_res, 'Resumo');
 
     // -- Aba Clientes (local - mais completo) --
-    const cli_rows = [['ID','Nome','CPF/CNPJ','Telefone','Email','Preço/m','Ciclo','Pgto','Pix','Obs','Data Cad.','Histórico Preços']];
+    const cli_rows = [['ID','Nome','CPF/CNPJ','Telefone','Email','Pre\u00E7o/m','Ciclo','Pgto','Pix','Obs','Data Cad.','Hist\u00F3rico Pre\u00E7os']];
     clientes_local.forEach(c => {
       const hist = (c.historicoPrecos||[]).map(h=>`${h.dataVigencia||h.data}: R$${h.preco}`).join(' | ');
       cli_rows.push([c.id,c.nome,c.doc||'',c.tel||'',c.email||'',c.preco_m||0,c.ciclo||'',c.pgto||'',c.pix||'',c.obs||'',c.dataCad||'',hist]);
@@ -2490,7 +2490,7 @@ async function fazerBackup(){
     abas.forEach(({dados, nome}) => {
       if(!dados.length) return;
       const ws = XLSX.utils.aoa_to_sheet(dados);
-      // Larguras automáticas
+      // Larguras autom\u00E1ticas
       const maxCols = dados[0].length;
       ws['!cols'] = Array(maxCols).fill({wch:16});
       XLSX.utils.book_append_sheet(wb, ws, nome);
@@ -2524,7 +2524,7 @@ window.addEventListener('load',function(){
   if(window.innerWidth<768){var mt=$('menu-toggle');if(mt)mt.style.display='flex';}
 });
 
-// -- Expor funções globais necessárias para onclick --
+// -- Expor fun\u00E7\u00F5es globais necess\u00E1rias para onclick --
 const _globals=['doLogin','logout','goNav','toggleMenu','setTheme','syncData',
   'filtrarClis','abrirFormCliente','editarCli','salvarCli','remCli','verHistCli',
   'verHistoricoPagamentos','abrirNovoPreco','salvarNovoPreco','filtrarPedidos',
@@ -2541,7 +2541,7 @@ _globals.forEach(function(fn){
   try{if(typeof eval(fn)==='function') window[fn]=eval(fn);}catch(e){}
 });
 
-// -- Forçar altura total no iframe do Google Sites --
+// -- For\u00E7ar altura total no iframe do Google Sites --
 function notifyHeight(){
   const h = Math.max(
     document.body.scrollHeight,
@@ -2552,7 +2552,7 @@ function notifyHeight(){
   );
   // Comunicar altura ao Google Sites via postMessage
   window.parent.postMessage({type:'setHeight', height: h}, '*');
-  // Também tentar via frameElement
+  // Tamb\u00E9m tentar via frameElement
   try {
     if(window.frameElement){
       window.frameElement.style.height = h + 'px';
@@ -2564,12 +2564,12 @@ function notifyHeight(){
 // Executar ao carregar e ao redimensionar
 notifyHeight();
 window.addEventListener('resize', notifyHeight);
-// Repetir algumas vezes para garantir após renderização
+// Repetir algumas vezes para garantir ap\u00F3s renderiza\u00E7\u00E3o
 setTimeout(notifyHeight, 500);
 setTimeout(notifyHeight, 1500);
 setTimeout(notifyHeight, 3000);
 
-// Observer para detectar mudanças de conteúdo
+// Observer para detectar mudan\u00E7as de conte\u00FAdo
 try {
   new MutationObserver(notifyHeight).observe(
     document.body, {childList:true, subtree:true}
@@ -2577,7 +2577,7 @@ try {
 } catch(e){}
 </script>
 
-<!-- XLSX library para importação -->
+<!-- XLSX library para importa\u00E7\u00E3o -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
