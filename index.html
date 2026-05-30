@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTF Pro — Sistema de Gestão</title>
+<title>DTF Pro - Sistema de Gestão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
@@ -20,7 +20,7 @@
   --radius:8px;--radius-lg:12px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
 }
-/* ── TEMA ESCURO ── */
+/* -- TEMA ESCURO -- */
 [data-theme="dark"]{
   --bg:#0F1117;--surface:#1A1D27;--surface2:#22263A;
   --border:#2C3050;--border2:#363B5E;
@@ -31,7 +31,7 @@
   --red:#EF5350;--red-bg:#2D1515;
   --shadow:0 1px 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3);
 }
-/* ── TEMA DTF (verde escuro profissional) ── */
+/* -- TEMA DTF (verde escuro profissional) -- */
 [data-theme="dtf"]{
   --bg:#0D1F0D;--surface:#122012;--surface2:#1A2E1A;
   --border:#243824;--border2:#2E4A2E;
@@ -43,13 +43,13 @@
   --shadow:0 1px 3px rgba(0,0,0,.5);
 }
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
-/* ── LAYOUT ── */
+/* -- LAYOUT -- */
 .shell{display:flex;min-height:100vh}
 .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow:hidden}
 .main{margin-left:220px;flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .content{padding:24px;flex:1;overflow-y:auto;overflow-x:hidden}
-/* ── SIDEBAR ── */
+/* -- SIDEBAR -- */
 .logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
 .logo-title{font-size:16px;font-weight:600;color:var(--text)}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:2px}
@@ -64,7 +64,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .user-card{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius);cursor:pointer}
 .user-card:hover{background:var(--surface2)}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
-/* ── COMPONENTS ── */
+/* -- COMPONENTS -- */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:12px}
 .card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -74,12 +74,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .kpi-l{font-size:12px;color:var(--text2);margin-bottom:4px}
 .kpi-v{font-size:22px;font-weight:600;color:var(--text)}
 .kpi-s{font-size:11px;color:var(--text3);margin-top:2px}
-/* ── FORM ── */
+/* -- FORM -- */
 .f{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .f label{font-size:12px;font-weight:500;color:var(--text2)}
 .f input,.f select,.f textarea{padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;width:100%;font-family:'Inter',sans-serif;transition:border-color .12s}
 .f input:focus,.f select:focus{outline:none;border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(46,109,180,.1)}
-/* ── BUTTONS ── */
+/* -- BUTTONS -- */
 .btn{padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:all .12s;font-family:'Inter',sans-serif}
 .btn:hover{background:var(--surface2);border-color:var(--border2)}
 .btn:active{transform:scale(.98)}
@@ -90,14 +90,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .btn-full{width:100%;justify-content:center;padding:10px}
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn-xs{padding:3px 8px;font-size:11px}
-/* ── BADGE ── */
+/* -- BADGE -- */
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
 .b-g{background:var(--green-bg);color:var(--green)}
 .b-b{background:var(--blue-bg);color:var(--blue)}
 .b-a{background:var(--amber-bg);color:var(--amber)}
 .b-r{background:var(--red-bg);color:var(--red)}
 .b-gray{background:var(--surface2);color:var(--text2)}
-/* ── TABLE ── */
+/* -- TABLE -- */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text2);font-weight:500;font-size:12px;white-space:nowrap;background:var(--surface2)}
 .tbl th:first-child{border-radius:var(--radius) 0 0 0}
@@ -105,12 +105,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover td{background:var(--surface2)}
-/* ── ALERT ── */
+/* -- ALERT -- */
 .alert{border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;align-items:flex-start;gap:8px;border:1px solid}
 .alert-r{background:var(--red-bg);border-color:#f5c2c2;color:var(--red)}
 .alert-a{background:var(--amber-bg);border-color:#ffd97a;color:var(--amber)}
 .alert-g{background:var(--green-bg);border-color:#b3d9b3;color:var(--green)}
-/* ── MISC ── */
+/* -- MISC -- */
 .hidden{display:none!important}
 .pbar{background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;margin-top:4px}
 .pbar-fill{height:100%;border-radius:4px;transition:width .3s}
@@ -119,21 +119,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff4;border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;vertical-align:-2px}
 .spin-dark{border-color:var(--border);border-top-color:var(--text2)}
 @keyframes sp{to{transform:rotate(360deg)}}
-/* ── LOGIN ── */
+/* -- LOGIN -- */
 .login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
 .login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;width:100%;max-width:360px;box-shadow:var(--shadow)}
-/* ── TOAST ── */
+/* -- TOAST -- */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:var(--radius);font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .toast.on{opacity:1}
-/* ── TABS ── */
+/* -- TABS -- */
 .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px}
 .tab-btn{padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);font-weight:500;transition:all .12s;background:none;border-top:none;border-left:none;border-right:none;font-family:'Inter',sans-serif}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.on{color:var(--green);border-bottom-color:var(--green)}
-/* ── MODAL ── */
+/* -- MODAL -- */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
 .modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.15)}
-/* ── RESPONSIVE ── */
+/* -- RESPONSIVE -- */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);transition:transform .2s}
   .sidebar.open{transform:translateX(0)}
@@ -148,7 +148,7 @@ html,body{height:100%;max-height:100vh;overflow:hidden}
 </head>
 <body>
 
-<!-- ═══ LOGIN ═══ -->
+<!-- === LOGIN === -->
 <div id="login-page" class="login-page">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:28px">
@@ -164,12 +164,12 @@ html,body{height:100%;max-height:100vh;overflow:hidden}
       <i class="ti ti-login"></i> Entrar
     </button>
     <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px">
-      admin/admin123 · op1/op1234 · op2/op2234
+      admin/admin123 . op1/op1234 . op2/op2234
     </p>
   </div>
 </div>
 
-<!-- ═══ SHELL ═══ -->
+<!-- === SHELL === -->
 <div id="shell" class="shell hidden">
 
   <!-- SIDEBAR -->
@@ -259,15 +259,15 @@ html,body{height:100%;max-height:100vh;overflow:hidden}
 <div class="toast" id="toast"></div>
 
 <script type="text/javascript">
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // CONFIG
-// ═══════════════════════════════════════════════════════
+// =======================================================
 const API='https://script.google.com/macros/s/AKfycbxHkhy2u2dRjinyG6Co47p2ujL1rzdVY2H6bHRvpMn3RtUz7_uNsE0uldHQTV-XMWqCpw/exec';
 const API_KEY='50a37d827c81bf6996200a537f18fbe0cc0c0fe7b090bc5d878fa660533369a3';
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // UTILS
-// ═══════════════════════════════════════════════════════
+// =======================================================
 const $=id=>document.getElementById(id);
 const v=id=>$(id)?.value||'';
 const n=id=>parseFloat($(id)?.value)||0;
@@ -291,9 +291,9 @@ const diffDays=(d1,d2)=>Math.round((new Date(d2)-new Date(d1))/(864e5));
 let CU=null, NAV='dashboard';
 let _cache={};
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // API
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function apiGet(aba,force=false){
   if(!force && _cache[aba] && Date.now()-_cache[aba].ts<60000) return _cache[aba].data;
   try{
@@ -323,11 +323,11 @@ function syncData(){
   toast('Dados atualizados');
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // AUTH
-// ═══════════════════════════════════════════════════════
+// =======================================================
 
-// Usuários padrão — fallback quando localStorage não disponível (Google Sites iframe)
+// Usuários padrão - fallback quando localStorage não disponível (Google Sites iframe)
 const USERS_DEFAULT = [
   {id:1,nome:'Admin',login:'admin',senha:'admin123',perfil:'admin',ativo:true},
   {id:2,nome:'Operador 1',login:'op1',senha:'op1234',perfil:'operador',maquina:1,ativo:true},
@@ -369,7 +369,7 @@ async function loadUsersFromSheets(){
 
 
 
-// Storage seguro — funciona mesmo com iframe bloqueando localStorage
+// Storage seguro - funciona mesmo com iframe bloqueando localStorage
 const store = {
   _mem: {},
   get(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):this._mem[k]||null; }catch(e){ return this._mem[k]||null; } },
@@ -414,7 +414,7 @@ function initShell(){
   const isA=CU.perfil==='admin';
   $('user-name').textContent=CU.nome;
   $('user-avatar').textContent=CU.nome.substring(0,2).toUpperCase();
-  $('user-role').textContent=isA?'Admin':'Operador — Imp.'+(CU.maquina||1);
+  $('user-role').textContent=isA?'Admin':'Operador - Imp.'+(CU.maquina||1);
   if(!isA){
     $('nav-admin-section')?.style && ($('nav-admin-section').style.display='none');
     $('nav-admin-section2')?.style && ($('nav-admin-section2').style.display='none');
@@ -426,9 +426,9 @@ function initShell(){
   checkStatusDB();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // NAVIGATION
-// ═══════════════════════════════════════════════════════
+// =======================================================
 const PAGE_TITLES={dashboard:'Dashboard',alertas:'Alertas',clientes:'Clientes',pedidos:'Pedidos',financeiro:'Financeiro',producao:'Lançar Produção',importar:'Importar Arquivo',insumos:'Insumos',relatorios:'Relatórios',config:'Configurações'};
 
 function goNav(id){
@@ -445,9 +445,9 @@ function goNav(id){
 
 function toggleMenu(){$('sidebar').classList.toggle('open');}
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // CLIENTES (local)
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // Cache local para performance
 let _cliCache=null;
 
@@ -483,7 +483,7 @@ function saveClientes(cls){
 }
 
 async function syncCliente(c){
-  // Upsert — atualizar se existir, inserir se não
+  // Upsert - atualizar se existir, inserir se não
   try{
     await fetch(API,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'application/json'},
@@ -543,9 +543,9 @@ async function getPrecoCli(cli,dataJob=null){
   return p;
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // DASHBOARD
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderDashboard(){
   const [prod,fin,ped]=await Promise.all([apiGet('producao'),apiGet('financeiro'),apiGet('pedidos')]);
   const pd=prod.slice(1), fd=fin.slice(1), pedd=ped.slice(1);
@@ -567,7 +567,7 @@ async function renderDashboard(){
   const topCli=Object.entries(porCli).sort((a,b)=>b[1].v-a[1].v).slice(0,5);
 
   $('main-content').innerHTML=`
-    ${vencidas.length?`<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>${vencidas.length} cobrança(s) vencida(s)!</strong> — <a href="#" onclick="goNav('alertas')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>`:''}
+    ${vencidas.length?`<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>${vencidas.length} cobrança(s) vencida(s)!</strong> - <a href="#" onclick="goNav('alertas')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>`:''}
     <div class="g4" style="margin-bottom:16px">
       <div class="kpi"><div class="kpi-l">Produção total</div><div class="kpi-v">${fmt(sum(pd,5))} m</div><div class="kpi-s">${pd.length} turnos</div></div>
       <div class="kpi"><div class="kpi-l">Faturamento</div><div class="kpi-v" style="color:var(--green)">${fmtR(sum(pedd,7))}</div><div class="kpi-s">${pedd.length} pedidos</div></div>
@@ -631,9 +631,9 @@ async function renderDashboard(){
     </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // ALERTAS
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function checkStatusDB(){
   try {
     const [prod, ped] = await Promise.all([apiGet('producao'), apiGet('pedidos')]);
@@ -673,8 +673,8 @@ async function checkStatusDB(){
     }
 
     el.innerHTML = `
-      ${statusCard('Impressora 1 — AZUL',  ultAzul,  2, 4)}
-      ${statusCard('Impressora 2 — CINZA', ultCinza, 2, 4)}
+      ${statusCard('Impressora 1 - AZUL',  ultAzul,  2, 4)}
+      ${statusCard('Impressora 2 - CINZA', ultCinza, 2, 4)}
       ${statusCard('Último pedido importado', ultPed, 0, 3)}
       <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
         <i class="ti ti-refresh" style="font-size:20px;color:var(--text3)"></i>
@@ -710,8 +710,8 @@ async function renderAlertas(){
     if(r[8]==='pago'||r[8]==='recebido') return;
     if(!r[4]) return;
     const d=diffDays(hoje,r[4]);
-    if(d<0) alertas.push({tipo:'r',msg:`<strong>${r[3]||'?'}</strong> — ${fmtR(r[5])} venceu há ${Math.abs(d)} dia(s)`,ts:r[0]});
-    else if(d<=2) alertas.push({tipo:'a',msg:`<strong>${r[3]||'?'}</strong> — ${fmtR(r[5])} vence em ${d===0?'hoje':d+' dia(s)'}`,ts:r[0]});
+    if(d<0) alertas.push({tipo:'r',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu há ${Math.abs(d)} dia(s)`,ts:r[0]});
+    else if(d<=2) alertas.push({tipo:'a',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} vence em ${d===0?'hoje':d+' dia(s)'}`,ts:r[0]});
   });
   getClientes().forEach(c=>{
     if(!c.ciclo||c.ciclo==='avulso') return;
@@ -721,7 +721,7 @@ async function renderAlertas(){
     if(parts.length<3) return;
     const d=diffDays(new Date(parts[2]+'-'+parts[1]+'-'+parts[0]).toISOString().split('T')[0],hoje);
     const lim={semanal:9,quinzenal:17,mensal:32}[c.ciclo]||32;
-    if(d>lim) alertas.push({tipo:'r',msg:`<strong>${c.nome}</strong> — fechamento ${c.ciclo} pendente há ${d} dias`});
+    if(d>lim) alertas.push({tipo:'r',msg:`<strong>${c.nome}</strong> - fechamento ${c.ciclo} pendente há ${d} dias`});
   });
 
   $('main-content').innerHTML=`
@@ -734,9 +734,9 @@ async function renderAlertas(){
   checkAlertas();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // CLIENTES
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderClientes(){
   const cls=await getClientes();
   $('main-content').innerHTML=`
@@ -905,7 +905,7 @@ async function verHistCli(id){
   m.className='modal-bg';
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Histórico — ${c.nome}</p>
+      <p style="font-size:16px;font-weight:600">Histórico - ${c.nome}</p>
       <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
     </div>
     ${hist.length?hist.slice().reverse().map((h,i)=>`
@@ -936,7 +936,7 @@ function abrirNovoPreco(cliId){
   m.className='modal-bg';
   m.innerHTML=`<div class="modal" style="max-width:360px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:15px;font-weight:600">Novo preço — ${c.nome}</p>
+      <p style="font-size:15px;font-weight:600">Novo preço - ${c.nome}</p>
       <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
     </div>
     <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Preço atual: <strong>${fmtR(c.preco_m||0)}/m</strong></p>
@@ -966,14 +966,14 @@ async function salvarNovoPreco(cliId){
   cls[idx].preco_m=preco;
   saveClientes(cls);
   apiPost('precos_historico',['timestamp','cliente','preco','data_vigencia','anterior','obs'],[nowStr(),cls[idx].nome,preco,vig,ant,v('np-obs')]);
-  toast(`Preço de ${cls[idx].nome} → ${fmtR(preco)}/m ✓`);
+  toast(`Preço de ${cls[idx].nome} -> ${fmtR(preco)}/m OK`);
   document.querySelector('.modal-bg')?.remove();
   renderClientes();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // PRODUÇÃO
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderProducao(){
   const isA=CU.perfil==='admin';
   let maq=CU.maquina||1;
@@ -983,9 +983,9 @@ async function renderProducao(){
   $('main-content').innerHTML=`
     ${isA?`<div style="display:flex;gap:8px;margin-bottom:12px">
       <button class="btn ${maq===1?'btn-b':''}" style="flex:1;justify-content:center" onclick="CU.maquina=1;renderProducao()">
-        <i class="ti ti-printer"></i> Impressora 1 — AZUL</button>
+        <i class="ti ti-printer"></i> Impressora 1 - AZUL</button>
       <button class="btn ${maq===2?'btn-p':''}" style="flex:1;justify-content:center" onclick="CU.maquina=2;renderProducao()">
-        <i class="ti ti-printer"></i> Impressora 2 — CINZA</button>
+        <i class="ti ti-printer"></i> Impressora 2 - CINZA</button>
     </div>`:''}
     <div class="card">
       <div class="card-title"><i class="ti ti-calendar"></i>turno</div>
@@ -1025,7 +1025,7 @@ async function renderProducao(){
       <div class="f" style="margin-top:4px"><label>Observações</label><input id="p-obs" placeholder="Opcional"></div>
     </div>
     <button class="btn btn-p btn-full" id="btn-sp" onclick="salvarProducao()">
-      <i class="ti ti-device-floppy"></i> Salvar lançamento — Impressora ${maq}
+      <i class="ti ti-device-floppy"></i> Salvar lançamento - Impressora ${maq}
     </button>
     <div style="margin-top:16px">
       <p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Últimos lançamentos</p>
@@ -1052,15 +1052,15 @@ async function salvarProducao(){
     ['timestamp','maquina','data','turno','operador','metros','white_g','yellow_g','magenta_g','cyan_g','black_g','tpu_g','poliamida_g','perdas_m','energia_kwh','manutencao_r','obs'],
     [nowStr(),maq,v('p-data'),v('p-turno'),v('p-op'),metros,n('p-tw'),n('p-ty'),n('p-tm'),n('p-tc'),n('p-tk'),n('p-tpu'),n('p-pol'),n('p-perdas'),n('p-kwh'),n('p-man'),v('p-obs')]);
   toast('Lançamento salvo!');
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lançamento — Impressora '+maq;
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lançamento - Impressora '+maq;
   ['p-metros','p-perdas','p-tw','p-ty','p-tm','p-tc','p-tk','p-tpu','p-pol','p-kwh','p-man','p-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
   delete _cache['producao'];
   renderProducao();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // PEDIDOS
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderPedidos(){
   const rows=await apiGet('pedidos');
   const cls=getClientes();
@@ -1173,9 +1173,9 @@ async function salvarPedido(){
   renderPedidos();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // FINANCEIRO
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderFinanceiro(){
   const rows=await apiGet('financeiro');
   const dados=rows.slice(1);
@@ -1192,7 +1192,7 @@ async function renderFinanceiro(){
       <div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">${fmtR(sumV(rec)-sumV(pag))}</div></div>
     </div>
     ${vencidas.map(r=>`<div class="alert alert-r"><i class="ti ti-alert-circle"></i>
-      <div style="flex:1"><strong>${r[3]||'?'}</strong> — ${fmtR(r[5])} venceu em ${r[4]}
+      <div style="flex:1"><strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu em ${r[4]}
         <button class="btn btn-xs btn-p" style="margin-left:8px" onclick="darBaixa('${r[0]}')">Dar baixa</button>
       </div></div>`).join('')}
     <div class="tabs">
@@ -1249,7 +1249,7 @@ async function finTab(t,btn){
         <label>Conta para recebimento</label>
         <select id="fech-conta">
           <option value="">Selecione a conta...</option>
-          ${contas.map((c,i)=>`<option value="${i}">${c.tipo==='pix'?'Pix':'Transferência'} — ${c.desc} (${c.chave})</option>`).join('')}
+          ${contas.map((c,i)=>`<option value="${i}">${c.tipo==='pix'?'Pix':'Transferência'} - ${c.desc} (${c.chave})</option>`).join('')}
         </select>
       </div>
       ${!contas.length?`<div class="alert alert-a" style="margin-top:8px"><i class="ti ti-alert-circle"></i>
@@ -1306,7 +1306,7 @@ async function darBaixa(ts){
     <div class="f">
       <label>Tipo de pagamento</label>
       <select id="baixa-tipo" onchange="toggleBaixaParcial()">
-        <option value="total">Pagamento total — ${fmtR(valorTotal)}</option>
+        <option value="total">Pagamento total - ${fmtR(valorTotal)}</option>
         <option value="parcial">Pagamento parcial</option>
       </select>
     </div>
@@ -1385,7 +1385,7 @@ async function confirmarBaixa(ts, cliente, valorTotal){
     saveClientes(cls);
   }
 
-  // Se parcial — criar nova conta com o saldo devedor
+  // Se parcial - criar nova conta com o saldo devedor
   if(saldo>0){
     const proxVenc=calcVencimento(cli?.ciclo,today());
     await apiPost('financeiro',
@@ -1406,7 +1406,7 @@ async function confirmarBaixa(ts, cliente, valorTotal){
   } else {
     document.querySelector('.modal-bg')?.remove();
     delete _cache['financeiro'];
-    toast('Pagamento total registrado! ✓');
+    toast('Pagamento total registrado! OK');
     renderFinanceiro();
   }
 }
@@ -1441,7 +1441,7 @@ function abrirModalAtualizacaoSaldo(cliente, valorPago, saldoAtual){
       <label>Conta Pix para pagamento do saldo</label>
       <select id="upd-conta">
         <option value="">Selecione...</option>
-        ${contas.map((c,i)=>`<option value="${i}">${c.desc} — ${c.chave}</option>`).join('')}
+        ${contas.map((c,i)=>`<option value="${i}">${c.desc} - ${c.chave}</option>`).join('')}
       </select>
     </div>
 
@@ -1485,7 +1485,7 @@ async function verHistoricoPagamentos(nomeCliente){
   m.className='modal-bg';
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Histórico de pagamentos — ${nomeCliente}</p>
+      <p style="font-size:16px;font-weight:600">Histórico de pagamentos - ${nomeCliente}</p>
       <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">×</button>
     </div>
     ${cli.saldoDevedor>0?`
@@ -1499,7 +1499,7 @@ async function verHistoricoPagamentos(nomeCliente){
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;font-size:13px">
         <div>
           <p style="font-weight:500">${fmtR(h.valorPago)} <span style="font-size:11px;color:var(--text3)">${h.pgto||''}</span></p>
-          <p style="font-size:11px;color:var(--text2)">${h.data} · saldo após: ${fmtR(h.saldoDepois)}</p>
+          <p style="font-size:11px;color:var(--text2)">${h.data} . saldo após: ${fmtR(h.saldoDepois)}</p>
           ${h.obs?`<p style="font-size:11px;color:var(--text3)">${h.obs}</p>`:''}
         </div>
         <span class="badge ${h.saldoDepois>0?'b-a':'b-g'}">${h.saldoDepois>0?'parcial':'quitado'}</span>
@@ -1582,7 +1582,7 @@ async function renderListaContas(){
         <i class="ti ${icons[c.tipo]||'ti-wallet'}" style="font-size:18px;color:var(--green)"></i>
         <div>
           <p style="font-size:13px;font-weight:500">${c.desc}</p>
-          <p style="font-size:12px;color:var(--text2)">${c.chave}${c.fav?' · '+c.fav:''}</p>
+          <p style="font-size:12px;color:var(--text2)">${c.chave}${c.fav?' . '+c.fav:''}</p>
         </div>
       </div>
       <button class="btn btn-xs btn-r" onclick="remConta(${i})"><i class="ti ti-trash"></i></button>
@@ -1645,7 +1645,7 @@ async function carregarJobsCliente(){
         ${jobs.map(r=>`
           <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px" id="fech-row-${r._idx}">
             <input type="checkbox" checked onchange="toggleJobFech(${r._idx},this.checked)" style="flex-shrink:0">
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[10]||r[3]||''}">${r[10]||r[3]||'—'}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[10]||r[3]||''}">${r[10]||r[3]||'-'}</span>
             <span style="color:var(--text2);white-space:nowrap">${fmt(r[5])} m</span>
             <span style="font-weight:500;white-space:nowrap;min-width:80px;text-align:right">${fmtR(r[7])}</span>
           </div>`).join('')}
@@ -1738,7 +1738,7 @@ function confirmarFechamento(){
       <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px">
         <p style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Cliente</p>
         <p style="font-size:15px;font-weight:600">${cliNome}</p>
-        <p style="font-size:12px;color:var(--text2)">${de?de+' a ':''} ${ate} · ${cli?.ciclo||'avulso'}</p>
+        <p style="font-size:12px;color:var(--text2)">${de?de+' a ':''} ${ate} . ${cli?.ciclo||'avulso'}</p>
       </div>
 
       <!-- Saldo devedor anterior (se houver) -->
@@ -1746,7 +1746,7 @@ function confirmarFechamento(){
       <div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <p style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase">⚠ Saldo devedor anterior</p>
+            <p style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase">! Saldo devedor anterior</p>
             <p style="font-size:12px;color:var(--amber)">Valor em aberto do fechamento anterior</p>
           </div>
           <p style="font-size:16px;font-weight:700;color:var(--amber)">${fmtR(saldoDevedor)}</p>
@@ -1761,7 +1761,7 @@ function confirmarFechamento(){
           </p>
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             ${jobs.map(r=>`<tr>
-              <td style="padding:5px 0;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">${r[10]||r[3]||'—'}</td>
+              <td style="padding:5px 0;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">${r[10]||r[3]||'-'}</td>
               <td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;color:var(--text2)">${fmt(r[5])} m</td>
               <td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-weight:500;padding-left:12px">${fmtR(r[7])}</td>
             </tr>`).join('')}
@@ -1789,7 +1789,7 @@ function confirmarFechamento(){
       <!-- Dados para pagamento -->
       ${conta?`<div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 14px;margin-top:14px">
         <p style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:4px">Dados para pagamento</p>
-        <p style="font-size:13px;font-weight:500">${conta.tipo==='pix'?'Pix':'Transferência Bancária'} — ${conta.desc}</p>
+        <p style="font-size:13px;font-weight:500">${conta.tipo==='pix'?'Pix':'Transferência Bancária'} - ${conta.desc}</p>
         <p style="font-size:14px;font-weight:700;color:var(--green)">${conta.chave}</p>
         ${conta.fav?`<p style="font-size:12px;color:var(--green)">Favorecido: ${conta.fav}</p>`:''}
       </div>`:''}
@@ -2023,15 +2023,15 @@ async function confirmarImp(){
     ok++;
     await new Promise(r=>setTimeout(r,80));
   }
-  toast(`${ok} pedidos lançados! ✓`);
+  toast(`${ok} pedidos lançados! OK`);
   $('imp-preview').innerHTML=`<div class="alert alert-g" style="margin-top:10px">
-    <i class="ti ti-circle-check"></i><strong>${ok} pedidos importados com sucesso</strong> — metragem calculada pela fórmula de grade.
+    <i class="ti ti-circle-check"></i><strong>${ok} pedidos importados com sucesso</strong> - metragem calculada pela fórmula de grade.
   </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // INSUMOS
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function renderInsumos(){
   const rows=await apiGet('insumos');
   $('main-content').innerHTML=`
@@ -2090,9 +2090,9 @@ async function salvarInsumo(){
   toast('Entrada registrada!');delete _cache['insumos'];renderInsumos();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // RELATÓRIOS
-// ═══════════════════════════════════════════════════════
+// =======================================================
 function renderRelatorios(){
   $('main-content').innerHTML=`
     <div class="g2">
@@ -2233,7 +2233,7 @@ async function gerarRelInsumos(){
   const d=rows.slice(1);
   const tot=d.reduce((s,r)=>s+(parseFloat(r[8])||0),0);
   $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatório de Insumos — Total: ${fmtR(tot)}</p>
+    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatório de Insumos - Total: ${fmtR(tot)}</p>
     <div style="overflow-x:auto"><table class="tbl">
       <thead><tr><th>Data</th><th>NF</th><th>Fornecedor</th><th>Material</th><th>Qtd</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
       <tbody>${d.map(r=>`<tr>
@@ -2253,9 +2253,9 @@ async function exportCSV(aba){
   toast('CSV exportado!');
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // CONFIG
-// ═══════════════════════════════════════════════════════
+// =======================================================
 function renderConfig(){
   renderListaContas();
   const usrs=getUsers();
@@ -2314,8 +2314,8 @@ function renderConfig(){
       <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
         <i class="ti ti-info-circle" style="font-size:18px;color:var(--text2);flex-shrink:0"></i>
         <p style="font-size:12px;color:var(--text2)">
-          O arquivo gerado contém: <strong>Resumo · Clientes · Pedidos · Financeiro · Produção · Insumos</strong>
-          — uma aba por tipo de dado.
+          O arquivo gerado contém: <strong>Resumo . Clientes . Pedidos . Financeiro . Produção . Insumos</strong>
+          - uma aba por tipo de dado.
         </p>
       </div>
       <button class="btn btn-p" id="btn-backup" onclick="fazerBackup()" style="padding:10px 20px">
@@ -2402,13 +2402,13 @@ function toggleAcesso(id){
   _usersCache=usrs;
   syncUser(usrs[idx]);
   const nome=usrs[idx].nome;
-  toast(novoEstado ? nome+' — acesso liberado ✓' : nome+' — acesso bloqueado 🔒');
+  toast(novoEstado ? nome+' - acesso liberado OK' : nome+' - acesso bloqueado ');
   renderConfig();
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // TEMA
-// ═══════════════════════════════════════════════════════
+// =======================================================
 function setTheme(t){
   document.documentElement.setAttribute('data-theme', t==='light'?'':t);
   store.set('dtf_theme', t);
@@ -2426,9 +2426,9 @@ function initTheme(){
   setTheme(saved);
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // BACKUP
-// ═══════════════════════════════════════════════════════
+// =======================================================
 async function fazerBackup(){
   const btn = document.getElementById('btn-backup');
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Gerando backup...'; }
@@ -2444,18 +2444,18 @@ async function fazerBackup(){
       apiGet('clientes', true),
     ]);
 
-    // Clientes locais (mais completo — tem histórico de preços)
+    // Clientes locais (mais completo - tem histórico de preços)
     const clientes_local = getClientes();
 
     if(typeof XLSX === 'undefined'){ toast('Erro: biblioteca não carregada'); return; }
 
     const wb = XLSX.utils.book_new();
 
-    // ── Aba Resumo ──
+    // -- Aba Resumo --
     const hoje = new Date().toLocaleString('pt-BR');
     const sumP = (arr,col) => arr.slice(1).reduce((s,r)=>s+(parseFloat(r[col])||0),0);
     const resumo_data = [
-      ['DTF Pro — Backup de Dados'],
+      ['DTF Pro - Backup de Dados'],
       ['Gerado em:', hoje],
       [''],
       ['Fonte', 'Registros', 'Informação'],
@@ -2469,7 +2469,7 @@ async function fazerBackup(){
     ws_res['!cols'] = [{wch:20},{wch:15},{wch:35}];
     XLSX.utils.book_append_sheet(wb, ws_res, 'Resumo');
 
-    // ── Aba Clientes (local — mais completo) ──
+    // -- Aba Clientes (local - mais completo) --
     const cli_rows = [['ID','Nome','CPF/CNPJ','Telefone','Email','Preço/m','Ciclo','Pgto','Pix','Obs','Data Cad.','Histórico Preços']];
     clientes_local.forEach(c => {
       const hist = (c.historicoPrecos||[]).map(h=>`${h.dataVigencia||h.data}: R$${h.preco}`).join(' | ');
@@ -2479,7 +2479,7 @@ async function fazerBackup(){
     ws_cli['!cols'] = [{wch:12},{wch:30},{wch:16},{wch:16},{wch:24},{wch:12},{wch:12},{wch:14},{wch:28},{wch:20},{wch:12},{wch:50}];
     XLSX.utils.book_append_sheet(wb, ws_cli, 'Clientes');
 
-    // ── Abas do Google Sheets ──
+    // -- Abas do Google Sheets --
     const abas = [
       { dados: prod, nome: 'Producao' },
       { dados: ped,  nome: 'Pedidos'  },
@@ -2496,12 +2496,12 @@ async function fazerBackup(){
       XLSX.utils.book_append_sheet(wb, ws, nome);
     });
 
-    // ── Download ──
+    // -- Download --
     const dataStr = new Date().toLocaleDateString('pt-BR').replace(/\//g,'');
     const nomeArq = `backup_dtf_${dataStr}.xlsx`;
     XLSX.writeFile(wb, nomeArq);
 
-    toast('Backup salvo: ' + nomeArq + ' ✓', 4000);
+    toast('Backup salvo: ' + nomeArq + ' OK', 4000);
   } catch(e) {
     toast('Erro no backup: ' + e.message);
     console.error(e);
@@ -2510,9 +2510,9 @@ async function fazerBackup(){
   }
 }
 
-// ═══════════════════════════════════════════════════════
+// =======================================================
 // INIT
-// ═══════════════════════════════════════════════════════
+// =======================================================
 window.addEventListener('load',function(){
   initTheme();
   try{
@@ -2524,7 +2524,7 @@ window.addEventListener('load',function(){
   if(window.innerWidth<768){var mt=$('menu-toggle');if(mt)mt.style.display='flex';}
 });
 
-// ── Expor funções globais necessárias para onclick ──
+// -- Expor funções globais necessárias para onclick --
 const _globals=['doLogin','logout','goNav','toggleMenu','setTheme','syncData',
   'filtrarClis','abrirFormCliente','editarCli','salvarCli','remCli','verHistCli',
   'verHistoricoPagamentos','abrirNovoPreco','salvarNovoPreco','filtrarPedidos',
@@ -2541,7 +2541,7 @@ _globals.forEach(function(fn){
   try{if(typeof eval(fn)==='function') window[fn]=eval(fn);}catch(e){}
 });
 
-// ── Forçar altura total no iframe do Google Sites ──
+// -- Forçar altura total no iframe do Google Sites --
 function notifyHeight(){
   const h = Math.max(
     document.body.scrollHeight,
