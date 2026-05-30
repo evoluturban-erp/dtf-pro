@@ -528,7 +528,8 @@ function safeJSON(str,def){try{return str?JSON.parse(str):def;}catch(e){return d
 
 async function getPrecoCli(cli,dataJob=null){
   const clientes=await getClientes();
-  const c=clientes.find(x=>x.nome===cli);
+  const cliNorm=String(cli||'').trim().toLowerCase();
+  const c=clientes.find(x=>String(x.nome||'').trim().toLowerCase()===cliNorm);
   if(!c) return 0;
   const hist=c.historicoPrecos||[];
   if(!hist.length) return parseFloat(c.preco_m||0);
