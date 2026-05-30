@@ -1,2321 +1,683 @@
+// DTF Pro - app.js v2 - Sem template literals aninhadas
+var API='https://script.google.com/macros/s/AKfycbxHkhy2u2dRjinyG6Co47p2ujL1rzdVY2H6bHRvpMn3RtUz7_uNsE0uldHQTV-XMWqCpw/exec';
+var API_KEY='50a37d827c81bf6996200a537f18fbe0cc0c0fe7b090bc5d878fa660533369a3';
 
-// =======================================================
-// CONFIG
-// =======================================================
-const API='https://script.google.com/macros/s/AKfycbxHkhy2u2dRjinyG6Co47p2ujL1rzdVY2H6bHRvpMn3RtUz7_uNsE0uldHQTV-XMWqCpw/exec';
-const API_KEY='50a37d827c81bf6996200a537f18fbe0cc0c0fe7b090bc5d878fa660533369a3';
+var store={
+  _m:{},
+  get:function(k){try{var x=localStorage.getItem(k);return x?JSON.parse(x):this._m[k]||null;}catch(e){return this._m[k]||null;}},
+  set:function(k,v){this._m[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+  del:function(k){delete this._m[k];try{localStorage.removeItem(k);}catch(e){}}
+};
 
-// =======================================================
-// UTILS
-// =======================================================
-const $=id=>document.getElementById(id);
-const v=id=>$(id)?.value||'';
-const n=id=>parseFloat($(id)?.value)||0;
-const toast=(m,d=2800)=>{const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),d)};
-const fmtR=x=>'R$ '+(parseFloat(x)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-function fmtData(d){
-  if(!d) return '';
-  var s=String(d).trim();
-  // ISO format: 2026-05-29T...
-  if(s.match(/^\d{4}-\d{2}-\d{2}/)){
-    var p=s.split('T')[0].split('-');
-    return p[2]+'/'+p[1]+'/'+p[0];
-  }
-  return s;
+function $(id){return document.getElementById(id);}
+function v(id){var el=$(id);return el?el.value:'';}
+function n(id){return parseFloat(v(id))||0;}
+function toast(msg,dur){var t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},dur||2800);}
+function fmtR(x){return 'R$ '+(parseFloat(x)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt(x,d){return (parseFloat(x)||0).toFixed(d===undefined?2:d);}
+function today(){return new Date().toISOString().split('T')[0];}
+function nowStr(){return new Date().toLocaleString('pt-BR');}
+function fmtData(d){if(!d)return '';var s=String(d).trim();if(/^\d{4}-\d{2}-\d{2}/.test(s)){var p=s.split('T')[0].split('-');return p[2]+'/'+p[1]+'/'+p[0];}return s;}
+function safeJSON(str,def){try{return str?JSON.parse(str):def;}catch(e){return def;}}
+function diffDays(d1,d2){return Math.round((new Date(d2)-new Date(d1))/86400000);}
+
+var _cache={};
+async function apiGet(aba,force){
+  if(!force&&_cache[aba]&&Date.now()-_cache[aba].ts<60000)return _cache[aba].data;
+  try{var r=await fetch(API+'?aba='+encodeURIComponent(aba)+'&key='+API_KEY);var d=await r.json();var data=d.ok?d.rows:[];_cache[aba]={data:data,ts:Date.now()};return data;}catch(e){return[];}
 }
-const fmt=(x,d=2)=>(parseFloat(x)||0).toFixed(d);
-const today=()=>new Date().toISOString().split('T')[0];
-const nowStr=()=>new Date().toLocaleString('pt-BR');
-const diffDays=(d1,d2)=>Math.round((new Date(d2)-new Date(d1))/(864e5));
-
-let CU=null, NAV='dashboard';
-let _cache={};
-
-// =======================================================
-// API
-// =======================================================
-async function apiGet(aba,force=false){
-  if(!force && _cache[aba] && Date.now()-_cache[aba].ts<60000) return _cache[aba].data;
-  try{
-    const r=await fetch(`${API}?aba=${encodeURIComponent(aba)}&key=${API_KEY}`);
-    const d=await r.json();
-    const data=d.ok?d.rows:[];
-    _cache[aba]={data,ts:Date.now()};
-    return data;
-  }catch{return[];}
-}
-
 async function apiPost(aba,headers,row){
-  try{
-    await fetch(API,{method:'POST',mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({acao:'append',aba,headers,row,key:API_KEY})});
-    delete _cache[aba];
-    return true;
-  }catch{return false;}
+  try{await fetch(API,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'append',aba:aba,headers:headers,row:row,key:API_KEY})});delete _cache[aba];return true;}catch(e){return false;}
 }
-
-function syncData(){
-  _cache={};
-  const btn=$('btn-sync');
-  btn.innerHTML='<span class="spin spin-dark"></span>';
-  setTimeout(()=>{btn.innerHTML='<i class="ti ti-refresh"></i>';goNav(NAV);},800);
-  toast('Dados atualizados');
+async function apiUpsert(aba,idCol,idVal,headers,row){
+  try{await fetch(API,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'upsert',aba:aba,id_col:idCol,id_val:idVal,headers:headers,row:row,key:API_KEY})});delete _cache[aba];}catch(e){}
 }
+function syncData(){_cache={};var btn=$('btn-sync');if(btn)btn.innerHTML='<span class="spin spin-dark"></span>';setTimeout(function(){if(btn)btn.innerHTML='<i class="ti ti-refresh"></i>';goNav(NAV);},800);toast('Dados atualizados');}
 
-// =======================================================
-// AUTH
-// =======================================================
-
-// Usu\u00E1rios padr\u00E3o - fallback quando localStorage n\u00E3o dispon\u00EDvel (Google Sites iframe)
-const USERS_DEFAULT = [
+var CU=null,NAV='dashboard';
+var USERS_DEFAULT=[
   {id:1,nome:'Admin',login:'admin',senha:'admin123',perfil:'admin',ativo:true},
   {id:2,nome:'Operador 1',login:'op1',senha:'op1234',perfil:'operador',maquina:1,ativo:true},
-  {id:3,nome:'Operador 2',login:'op2',senha:'op2234',perfil:'operador',maquina:2,ativo:true},
+  {id:3,nome:'Operador 2',login:'op2',senha:'op2234',perfil:'operador',maquina:2,ativo:true}
 ];
-
-let _usersCache=null;
-
-function getUsers(){
-  // Usar cache se dispon\u00EDvel
-  if(_usersCache) return _usersCache;
-  try{
-    const saved=store.get('dtf_users');
-    if(saved&&saved.length) return saved;
-  }catch(e){}
-  return USERS_DEFAULT;
-}
-
-async function loadUsersFromSheets(){
-  try{
-    const rows=await apiGet('usuarios',false);
-    if(rows.length>1){
-      const users=rows.slice(1).filter(r=>r[0]).map(r=>({
-        id:      r[0],
-        nome:    r[1]||'',
-        login:   r[2]||'',
-        senha:   r[3]||'',
-        perfil:  r[4]||'operador',
-        maquina: parseInt(r[5])||1,
-        ativo:   r[6]!=='false',
-      }));
-      _usersCache=users;
-      store.set('dtf_users',users);
-      return users;
-    }
-  }catch(e){}
-  return getUsers();
-}
-
-
-
-// Storage seguro - funciona mesmo com iframe bloqueando localStorage
-const store = {
-  _mem: {},
-  get(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):this._mem[k]||null; }catch(e){ return this._mem[k]||null; } },
-  set(k,v){ this._mem[k]=v; try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
-  del(k){ delete this._mem[k]; try{ localStorage.removeItem(k); }catch(e){} }
-};
-
-// Sobrescrever ls para usar store seguro
-const ls = {
-  g(k){ return store.get(k); },
-  s(k,v){ store.set(k,v); }
-};
+var _usersCache=null;
+function getUsers(){if(_usersCache)return _usersCache;try{var s=store.get('dtf_users');if(s&&s.length)return s;}catch(e){}return USERS_DEFAULT;}
+async function syncUser(u){try{await fetch(API,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'upsert',aba:'usuarios',key:API_KEY,id_col:0,id_val:u.id,headers:['id','nome','login','senha','perfil','maquina','ativo'],row:[u.id,u.nome,u.login,u.senha,u.perfil,u.maquina||1,u.ativo!==false]})});}catch(e){}delete _cache['usuarios'];_usersCache=null;store.set('dtf_users',null);}
+async function loadUsersFromSheets(){try{var rows=await apiGet('usuarios',false);if(rows.length>1){var users=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return{id:r[0],nome:r[1]||'',login:r[2]||'',senha:r[3]||'',perfil:r[4]||'operador',maquina:parseInt(r[5])||1,ativo:r[6]!=='false'};});_usersCache=users;store.set('dtf_users',users);return users;}}catch(e){}return getUsers();}
 
 function doLogin(){
-  const login=v('l-login').trim();
-  const senha=v('l-senha');
+  var login=v('l-login').trim(),senha=v('l-senha');
   if(!login||!senha){toast('Preencha login e senha');return;}
-
-  // Buscar nos usu\u00E1rios dispon\u00EDveis (padr\u00E3o + cadastrados)
-  const u = getUsers().find(function(u){return u.login===login&&u.senha===senha;});
-
+  var u=getUsers().find(function(u){return u.login===login&&u.senha===senha;});
   if(!u){toast('Login ou senha incorretos');return;}
-  if(u.ativo===false){
-    toast('Acesso bloqueado. Entre em contato com o administrador.');return;
-  }
-
-  CU=u;
-  store.set('dtf_session',u);
-  $('login-page').classList.add('hidden');
-  $('shell').classList.remove('hidden');
-  initShell();
+  if(u.ativo===false){toast('Acesso bloqueado. Contate o administrador.');return;}
+  CU=u;store.set('dtf_session',u);
+  $('login-page').classList.add('hidden');$('shell').classList.remove('hidden');initShell();
 }
+function logout(){CU=null;store.del('dtf_session');$('shell').classList.add('hidden');$('login-page').classList.remove('hidden');}
 
-function logout(){
-  CU=null;
-  store.del('dtf_session');
-  $('shell').classList.add('hidden');
-  $('login-page').classList.remove('hidden');
+var _cliCache=null;
+async function getClientes(){
+  if(_cliCache)return _cliCache;
+  var local=store.get('dtf_clientes');
+  if(local&&local.length){_cliCache=local;return _cliCache;}
+  try{var rows=await apiGet('clientes',false);if(rows.length>1){_cliCache=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return{id:r[0],nome:r[1]||'',doc:r[2]||'',tel:r[3]||'',email:r[4]||'',ciclo:r[5]||'avulso',preco_m:parseFloat(r[6])||0,pgto:r[7]||'',pix:r[8]||'',obs:r[9]||'',dataCad:r[10]||'',saldoDevedor:parseFloat(r[11])||0,historicoPrecos:safeJSON(r[12],[]),historicoPagamentos:safeJSON(r[13],[])};});store.set('dtf_clientes',_cliCache);return _cliCache;}}catch(e){}return[];
 }
+function saveClientes(cls){_cliCache=cls;store.set('dtf_clientes',cls);}
+async function syncCliente(c){try{await fetch(API,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'upsert',aba:'clientes',key:API_KEY,id_col:0,id_val:c.id,headers:['id','nome','doc','tel','email','ciclo','preco_m','pgto','pix','obs','dataCad','saldoDevedor','historicoPrecos','historicoPagamentos'],row:[c.id,c.nome,c.doc||'',c.tel||'',c.email||'',c.ciclo||'avulso',c.preco_m||0,c.pgto||'',c.pix||'',c.obs||'',c.dataCad||'',c.saldoDevedor||0,JSON.stringify(c.historicoPrecos||[]),JSON.stringify(c.historicoPagamentos||[])]})});}catch(e){}delete _cache['clientes'];_cliCache=null;}
+async function getPrecoCli(cli,dataJob){var clientes=await getClientes();var norm=String(cli||'').trim().toLowerCase();var c=clientes.find(function(x){return String(x.nome||'').trim().toLowerCase()===norm;});if(!c)return 0;var hist=c.historicoPrecos||[];if(!hist.length)return parseFloat(c.preco_m||0);if(!dataJob)return hist[hist.length-1].preco;var d=new Date(dataJob);var p=hist[0].preco;for(var i=0;i<hist.length;i++){var h=hist[i];var dv=new Date(h.dataVigencia||h.data.split('/').reverse().join('-'));if(dv<=d)p=h.preco;else break;}return p;}
+
+var _contasCache=null;
+async function getContas(){if(_contasCache)return _contasCache;var local=store.get('dtf_contas');if(local&&local.length){_contasCache=local;return _contasCache;}try{var rows=await apiGet('contas',false);if(rows.length>1){_contasCache=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return{id:r[0],tipo:r[1]||'pix',desc:r[2]||'',chave:r[3]||'',fav:r[4]||''};});store.set('dtf_contas',_contasCache);return _contasCache;}}catch(e){}return[];}
+function saveContas(c){_contasCache=c;store.set('dtf_contas',c);}
+
+function setTheme(t){document.documentElement.setAttribute('data-theme',t==='light'?'':t);store.set('dtf_theme',t);['light','dark','dtf'].forEach(function(id){var btn=$('theme-'+id);if(!btn)return;btn.style.background=id===t?'var(--surface)':'transparent';btn.style.boxShadow=id===t?'var(--shadow)':'none';});}
+function initTheme(){setTheme(store.get('dtf_theme')||'light');}
+
+var PAGE_TITLES={dashboard:'Dashboard',alertas:'Alertas',clientes:'Clientes',pedidos:'Pedidos',financeiro:'Financeiro',producao:'Lancamento de Producao',importar:'Importar Arquivo',insumos:'Insumos',relatorios:'Relatorios',config:'Configuracoes'};
+function goNav(id){NAV=id;document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});var ni=$('nav-'+id);if(ni)ni.classList.add('active');var pt=$('page-title');if(pt)pt.textContent=PAGE_TITLES[id]||id;$('main-content').innerHTML='<div class="loading"><span class="spin spin-dark"></span> Carregando...</div>';var fn={dashboard:renderDashboard,alertas:renderAlertas,clientes:renderClientes,pedidos:renderPedidos,financeiro:renderFinanceiro,producao:renderProducao,importar:renderImportar,insumos:renderInsumos,relatorios:renderRelatorios,config:renderConfig};if(fn[id])fn[id]();else renderDashboard();}
+function toggleMenu(){var sb=$('sidebar');if(sb)sb.classList.toggle('open');}
 
 function initShell(){
-  const isA=CU.perfil==='admin';
-  $('user-name').textContent=CU.nome;
-  $('user-avatar').textContent=CU.nome.substring(0,2).toUpperCase();
-  $('user-role').textContent=isA?'Admin':'Operador - Imp.'+(CU.maquina||1);
-  if(!isA){
-    $('nav-admin-section')?.style && ($('nav-admin-section').style.display='none');
-    $('nav-admin-section2')?.style && ($('nav-admin-section2').style.display='none');
-  }
-  $('top-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
-  const start=isA?'dashboard':'producao';
-  goNav(start);
-  checkAlertas();
+  var isA=CU.perfil==='admin';
+  var un=$('user-name'),ua=$('user-avatar'),ur=$('user-role');
+  if(un)un.textContent=CU.nome;if(ua)ua.textContent=CU.nome.substring(0,2).toUpperCase();
+  if(ur)ur.textContent=isA?'Admin':'Operador - Imp.'+(CU.maquina||1);
+  if(!isA){var s1=$('nav-admin-section'),s2=$('nav-admin-section2');if(s1)s1.style.display='none';if(s2)s2.style.display='none';}
+  var td=$('top-date');if(td)td.textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+  goNav(isA?'dashboard':'producao');checkAlertas();checkStatusDB();
+}
+async function renderDashboard(){
+  var prod=await apiGet('producao'),fin=await apiGet('financeiro'),ped=await apiGet('pedidos');
+  var pd=prod.slice(1),fd=fin.slice(1),pedd=ped.slice(1);
+  function sc(a,c){return a.reduce(function(s,r){return s+(parseFloat(r[c])||0);},0);}
+  var hoje=today();
+  var venc=fd.filter(function(r){return r[8]!=='pago'&&r[8]!=='recebido'&&r[4]&&r[4]<hoje;});
+  var aRec=fd.filter(function(r){return r[2]==='receber'&&r[8]!=='recebido';}).reduce(function(s,r){return s+(parseFloat(r[5])||0);},0);
+  var m1=pd.filter(function(r){return (r[1]||'').toString().includes('AZUL')||r[1]==='1';});
+  var m2=pd.filter(function(r){return (r[1]||'').toString().includes('CINZA')||r[1]==='2';});
+  var totP=sc(pd,5),totM1=sc(m1,5),totM2=sc(m2,5);
+  var por={};pedd.forEach(function(r){var c=r[3]||'?';if(!por[c])por[c]={m:0,v:0};por[c].m+=parseFloat(r[5])||0;por[c].v+=parseFloat(r[7])||0;});
+  var top=Object.entries(por).sort(function(a,b){return b[1].v-a[1].v;}).slice(0,5);
+  var alHTML='';if(venc.length)alHTML='<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>'+venc.length+' cobranca(s) vencida(s)!</strong> - <a href="#" onclick="goNav(\'alertas\')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>';
+  var p1=totP?((totM1/totP)*100).toFixed(0):0,p2=totP?((totM2/totP)*100).toFixed(0):0;
+  var topHTML='';if(top.length){top.forEach(function(x){topHTML+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+x[0]+'</span><span style="color:var(--text2);margin:0 8px">'+fmt(x[1].m)+'m</span><strong>'+fmtR(x[1].v)+'</strong></div>';});}else topHTML='<p style="color:var(--text3);font-size:13px">Nenhum pedido ainda.</p>';
+  var ultH='';pd.slice(-6).reverse().forEach(function(r){var imp=(r[1]||'').toString().includes('AZUL')||r[1]==='1'?'<span class="badge b-b">Imp.1</span>':'<span class="badge b-g">Imp.2</span>';ultH+='<tr><td>'+fmtData(r[2])+'</td><td>'+imp+'</td><td>'+(r[4]||'')+'</td><td><strong>'+fmt(r[5])+'m</strong></td><td>'+fmt(r[13]||0)+'m</td><td>'+fmt(r[14]||0,1)+'</td></tr>';});
+  if(!ultH)ultH='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum lancamento.</td></tr>';
+  $('main-content').innerHTML=alHTML
+    +'<div class="g4" style="margin-bottom:16px">'
+    +'<div class="kpi"><div class="kpi-l">Producao total</div><div class="kpi-v">'+fmt(totP)+'m</div><div class="kpi-s">'+pd.length+' turnos</div></div>'
+    +'<div class="kpi"><div class="kpi-l">Faturamento</div><div class="kpi-v" style="color:var(--green)">'+fmtR(sc(pedd,7))+'</div><div class="kpi-s">'+pedd.length+' pedidos</div></div>'
+    +'<div class="kpi"><div class="kpi-l">A receber</div><div class="kpi-v">'+fmtR(aRec)+'</div><div class="kpi-s">'+venc.length+' vencidas</div></div>'
+    +'<div class="kpi" id="kpi-cli"><div class="kpi-l">Clientes</div><div class="kpi-v">...</div></div></div>'
+    +'<div class="g2">'
+    +'<div class="card"><div class="card-title"><i class="ti ti-printer"></i>producao por impressora</div>'
+    +'<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Impressora 1 (AZUL)</span><strong>'+fmt(totM1)+'m</strong></div><div class="pbar"><div class="pbar-fill" style="width:'+p1+'%;background:#2E6DB4"></div></div></div>'
+    +'<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Impressora 2 (CINZA)</span><strong>'+fmt(totM2)+'m</strong></div><div class="pbar"><div class="pbar-fill" style="width:'+p2+'%;background:#4A9E4A"></div></div></div>'
+    +'<div class="divider"></div><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Total</span><strong>'+fmt(totP)+'m</strong></div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-trophy"></i>top clientes</div>'+topHTML+'</div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-history"></i>ultimos lancamentos</div>'
+    +'<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Impressora</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead><tbody>'+ultH+'</tbody></table></div></div>'
+    +'<div style="margin-top:16px"><p style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Status da Base de Dados</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="db-status"><div style="padding:10px;background:var(--surface2);border-radius:var(--radius)"><span class="spin spin-dark"></span> Verificando...</div><div></div></div></div>';
+  getClientes().then(function(cls){var k=$('kpi-cli');if(k)k.innerHTML='<div class="kpi-l">Clientes</div><div class="kpi-v">'+cls.length+'</div><div class="kpi-s">cadastrados</div>';});
   checkStatusDB();
 }
 
-// =======================================================
-// NAVIGATION
-// =======================================================
-const PAGE_TITLES={dashboard:'Dashboard',alertas:'Alertas',clientes:'Clientes',pedidos:'Pedidos',financeiro:'Financeiro',producao:'Lan\u00E7ar Produ\u00E7\u00E3o',importar:'Importar Arquivo',insumos:'Insumos',relatorios:'Relat\u00F3rios',config:'Configura\u00E7\u00F5es'};
-
-function goNav(id){
-  NAV=id;
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  $('nav-'+id)?.classList.add('active');
-  $('page-title').textContent=PAGE_TITLES[id]||id;
-  $('main-content').innerHTML='<div class="loading"><span class="spin spin-dark"></span> Carregando...</div>';
-  const fn={dashboard:renderDashboard,alertas:renderAlertas,clientes:renderClientes,
-    pedidos:renderPedidos,financeiro:renderFinanceiro,producao:renderProducao,
-    importar:renderImportar,insumos:renderInsumos,relatorios:renderRelatorios,config:renderConfig};
-  (fn[id]||renderDashboard)();
-}
-
-function toggleMenu(){$('sidebar').classList.toggle('open');}
-
-// =======================================================
-// CLIENTES (local)
-// =======================================================
-// Cache local para performance
-let _cliCache=null;
-
-async function getClientes(){
-  // Retornar cache se dispon\u00EDvel
-  if(_cliCache) return _cliCache;
-  // Tentar store local primeiro (instant\u00E2neo)
-  const local=store.get('dtf_clientes');
-  if(local&&local.length){_cliCache=local;return _cliCache;}
-  // Buscar do Sheets
-  try{
-    const rows=await apiGet('clientes',false);
-    if(rows.length>1){
-      _cliCache=rows.slice(1).filter(r=>r[0]).map(r=>({
-        id:r[0],nome:r[1]||'',doc:r[2]||'',tel:r[3]||'',email:r[4]||'',
-        ciclo:r[5]||'avulso',preco_m:parseFloat(r[6])||0,pgto:r[7]||'',
-        pix:r[8]||'',obs:r[9]||'',dataCad:r[10]||'',
-        saldoDevedor:parseFloat(r[11])||0,
-        historicoPrecos:safeJSON(r[12],[]),
-        historicoPagamentos:safeJSON(r[13],[]),
-      }));
-      store.set('dtf_clientes',_cliCache);
-      return _cliCache;
-    }
-  }catch(e){}
-  return [];
-}
-
-function saveClientes(cls){
-  _cliCache=cls;
-  store.set('dtf_clientes',cls);
-  // Sync com Sheets em background
-}
-
-async function syncCliente(c){
-  // Upsert - atualizar se existir, inserir se n\u00E3o
-  try{
-    await fetch(API,{method:'POST',mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        acao:'upsert',
-        aba:'clientes',
-        key:API_KEY,
-        id_col:0,
-        id_val:c.id,
-        headers:['id','nome','doc','tel','email','ciclo','preco_m','pgto','pix','obs','dataCad','saldoDevedor','historicoPrecos','historicoPagamentos'],
-        row:[c.id,c.nome,c.doc||'',c.tel||'',c.email||'',c.ciclo||'avulso',c.preco_m||0,
-             c.pgto||'',c.pix||'',c.obs||'',c.dataCad||'',c.saldoDevedor||0,
-             JSON.stringify(c.historicoPrecos||[]),JSON.stringify(c.historicoPagamentos||[])]
-      })
-    });
-  }catch(e){}
-  delete _cache['clientes'];
-  _cliCache=null;
-}
-
-async function syncUser(u){
-  try{
-    await fetch(API,{method:'POST',mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        acao:'upsert',
-        aba:'usuarios',
-        key:API_KEY,
-        id_col:0,
-        id_val:u.id,
-        headers:['id','nome','login','senha','perfil','maquina','ativo'],
-        row:[u.id,u.nome,u.login,u.senha,u.perfil,u.maquina||1,u.ativo!==false]
-      })
-    });
-  }catch(e){}
-  delete _cache['usuarios'];
-  _usersCache=null;
-  store.set('dtf_users',null);
-}
-
-function safeJSON(str,def){try{return str?JSON.parse(str):def;}catch(e){return def;}}
-
-async function getPrecoCli(cli,dataJob=null){
-  const clientes=await getClientes();
-  const cliNorm=String(cli||'').trim().toLowerCase();
-  const c=clientes.find(x=>String(x.nome||'').trim().toLowerCase()===cliNorm);
-  if(!c) return 0;
-  const hist=c.historicoPrecos||[];
-  if(!hist.length) return parseFloat(c.preco_m||0);
-  if(!dataJob) return hist[hist.length-1].preco;
-  const d=new Date(dataJob);
-  let p=hist[0].preco;
-  for(const h of hist){
-    const dv=new Date(h.dataVigencia||h.data.split('/').reverse().join('-'));
-    if(dv<=d) p=h.preco; else break;
-  }
-  return p;
-}
-
-// =======================================================
-// DASHBOARD
-// =======================================================
-async function renderDashboard(){
-  const [prod,fin,ped]=await Promise.all([apiGet('producao'),apiGet('financeiro'),apiGet('pedidos')]);
-  const pd=prod.slice(1), fd=fin.slice(1), pedd=ped.slice(1);
-  const sum=(a,c)=>a.reduce((s,r)=>s+(parseFloat(r[c])||0),0);
-  const hoje=today();
-  const vencidas=fd.filter(r=>r[8]!=='pago'&&r[8]!=='recebido'&&r[4]&&r[4]<hoje);
-  const aReceber=fd.filter(r=>r[2]==='receber'&&r[8]!=='recebido').reduce((s,r)=>s+(parseFloat(r[5])||0),0);
-  const m1=pd.filter(r=>r[1]?.includes('AZUL'));
-  const m2=pd.filter(r=>r[1]?.includes('CINZA'));
-
-  // Por cliente
-  const porCli={};
-  pedd.forEach(r=>{
-    const c=r[3]||'?';
-    if(!porCli[c]){porCli[c]={m:0,v:0};}
-    porCli[c].m+=parseFloat(r[5])||0;
-    porCli[c].v+=parseFloat(r[7])||0;
-  });
-  const topCli=Object.entries(porCli).sort((a,b)=>b[1].v-a[1].v).slice(0,5);
-
-  $('main-content').innerHTML=`
-    ${vencidas.length?`<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div><strong>${vencidas.length} cobran\u00E7a(s) vencida(s)!</strong> - <a href="#" onclick="goNav('alertas')" style="color:var(--red);text-decoration:underline">Ver alertas</a></div></div>`:''}
-    <div class="g4" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-l">Produ\u00E7\u00E3o total</div><div class="kpi-v">${fmt(sum(pd,5))} m</div><div class="kpi-s">${pd.length} turnos</div></div>
-      <div class="kpi"><div class="kpi-l">Faturamento</div><div class="kpi-v" style="color:var(--green)">${fmtR(sum(pedd,7))}</div><div class="kpi-s">${pedd.length} pedidos</div></div>
-      <div class="kpi"><div class="kpi-l">A receber</div><div class="kpi-v">${fmtR(aReceber)}</div><div class="kpi-s">${vencidas.length} vencidas</div></div>
-      <div class="kpi"><div class="kpi-l">Clientes</div><div class="kpi-v">${getClientes().length}</div><div class="kpi-s">cadastrados</div></div>
-    </div>
-    <div class="g2">
-      <div class="card">
-        <div class="card-title"><i class="ti ti-printer"></i>produ\u00E7\u00E3o por impressora</div>
-        ${[['Impressora 1 (AZUL)',sum(m1,5),sum(pd,5),'#2E6DB4'],['Impressora 2 (CINZA)',sum(m2,5),sum(pd,5),'#4A9E4A']].map(([l,v,t,c])=>`
-          <div style="margin-bottom:12px">
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-              <span>${l}</span><strong>${fmt(v)} m</strong>
-            </div>
-            <div class="pbar"><div class="pbar-fill" style="width:${t?((v/t)*100).toFixed(0):0}%;background:${c}"></div></div>
-          </div>`).join('')}
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px">
-          <span style="color:var(--text2)">Total</span><strong>${fmt(sum(pd,5))} m</strong>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title"><i class="ti ti-trophy"></i>top clientes</div>
-        ${topCli.length?topCli.map(([nome,d])=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
-            <span style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nome}</span>
-            <span style="color:var(--text2);margin:0 8px">${fmt(d.m)} m</span>
-            <strong>${fmtR(d.v)}</strong>
-          </div>`).join(''):'<p style="color:var(--text3);font-size:13px">Nenhum pedido ainda.</p>'}
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="card-title"><i class="ti ti-database"></i>status da base de dados</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="db-status">
-        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--radius)">
-          <span class="spin spin-dark"></span>
-          <span style="font-size:12px;color:var(--text2)">Verificando...</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--radius)">
-          <span class="spin spin-dark"></span>
-          <span style="font-size:12px;color:var(--text2)">Verificando...</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><i class="ti ti-history"></i>\u00FAltimos lan\u00E7amentos de produ\u00E7\u00E3o</div>
-      <div style="overflow-x:auto">
-        <table class="tbl">
-          <thead><tr><th>Data</th><th>Impressora</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead>
-          <tbody>${pd.slice(-6).reverse().map(r=>`<tr>
-            <td>${fmtData(r[2])}</td>
-            <td><span class="badge ${(r[1]||'').includes('AZUL')?'b-b':'b-g'}">${(r[1]||'').includes('AZUL')?'Imp.1':'Imp.2'}</span></td>
-            <td>${r[4]||''}</td>
-            <td><strong>${fmt(r[5])} m</strong></td>
-            <td>${fmt(r[13]||0)} m</td>
-            <td>${fmt(r[14]||0,1)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>`;
-}
-
-// =======================================================
-// ALERTAS
-// =======================================================
 async function checkStatusDB(){
-  try {
-    const [prod, ped] = await Promise.all([apiGet('producao'), apiGet('pedidos')]);
-    const el = document.getElementById('db-status');
-    if (!el) return;
-
-    // \u00DAltima produ\u00E7\u00E3o por impressora
-    const pd = prod.slice(1);
-    const ultAzul  = pd.filter(r => (r[1]||'').includes('AZUL')).pop();
-    const ultCinza = pd.filter(r => (r[1]||'').includes('CINZA')).pop();
-
-    // \u00DAltimo pedido importado
-    const pedd = ped.slice(1);
-    const ultPed = pedd[pedd.length - 1];
-
-    function statusCard(label, row, colData=0, colOp=4) {
-      if (!row) return `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius)">
-          <i class="ti ti-circle-dashed" style="font-size:20px;color:var(--text3)"></i>
-          <div><p style="font-size:12px;font-weight:500;color:var(--text2)">${label}</p>
-            <p style="font-size:11px;color:var(--text3)">Sem dados ainda</p></div>
-        </div>`;
-      const dt   = String(row[colData] || '');
-      const op   = String(row[colOp]  || '');
-      const hoje = new Date().toLocaleDateString('pt-BR');
-      const isHoje = dt.includes(hoje.split('/')[0]+'/'+hoje.split('/')[1]+'/'+hoje.split('/')[2]) || dt.startsWith(hoje.split('/').reverse().join('-'));
-      return `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:${isHoje?'var(--green-bg)':'var(--surface2)'};border-radius:var(--radius);border:1px solid ${isHoje?'#b3d9b3':'var(--border)'}">
-          <i class="ti ti-${isHoje?'circle-check':'clock'}" style="font-size:20px;color:${isHoje?'var(--green)':'var(--text3)'}"></i>
-          <div style="flex:1;min-width:0">
-            <p style="font-size:12px;font-weight:500">${label}</p>
-            <p style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${dt}</p>
-            ${op?`<p style="font-size:10px;color:var(--text3)">${op}</p>`:''}
-          </div>
-          <span class="badge ${isHoje?'b-g':'b-gray'}" style="font-size:10px;flex-shrink:0">${isHoje?'hoje':'desatual.'}</span>
-        </div>`;
+  var el=$('db-status');if(!el)return;
+  try{
+    var prod=await apiGet('producao'),ped=await apiGet('pedidos');
+    var pd=prod.slice(1),pedd=ped.slice(1);
+    var uA=pd.filter(function(r){return (r[1]||'').toString().includes('AZUL')||r[1]==='1';}).pop();
+    var uC=pd.filter(function(r){return (r[1]||'').toString().includes('CINZA')||r[1]==='2';}).pop();
+    var uP=pedd[pedd.length-1];
+    function card(label,row,col){
+      if(!row)return '<div style="padding:10px;background:var(--surface2);border-radius:var(--radius)"><p style="font-size:12px;font-weight:500">'+label+'</p><p style="font-size:11px;color:var(--text3)">Sem dados ainda</p></div>';
+      var dt=fmtData(String(row[col]||''));
+      var hoje2=new Date().toLocaleDateString('pt-BR');
+      var isH=dt.slice(0,10)===hoje2.split('/').reverse().join('-')||dt===hoje2;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:'+(isH?'var(--green-bg)':'var(--surface2)')+';border-radius:var(--radius);border:1px solid '+(isH?'#b3d9b3':'var(--border)')+'"><i class="ti ti-'+(isH?'circle-check':'clock')+'" style="font-size:20px;color:'+(isH?'var(--green)':'var(--text3)')+'"></i><div style="flex:1;min-width:0"><p style="font-size:12px;font-weight:500">'+label+'</p><p style="font-size:11px;color:var(--text2)">'+dt+'</p></div><span class="badge '+(isH?'b-g':'b-gray')+'" style="font-size:10px">'+(isH?'hoje':'desatual.')+'</span></div>';
     }
-
-    el.innerHTML = `
-      ${statusCard('Impressora 1 - AZUL',  ultAzul,  2, 4)}
-      ${statusCard('Impressora 2 - CINZA', ultCinza, 2, 4)}
-      ${statusCard('\u00DAltimo pedido importado', ultPed, 0, 3)}
-      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
-        <i class="ti ti-refresh" style="font-size:20px;color:var(--text3)"></i>
-        <div>
-          <p style="font-size:12px;font-weight:500">\u00DAltima sincroniza\u00E7\u00E3o</p>
-          <p style="font-size:11px;color:var(--text2)">${new Date().toLocaleString('pt-BR')}</p>
-        </div>
-        <button class="btn btn-xs" style="margin-left:auto" onclick="syncData()">Atualizar</button>
-      </div>`;
-  } catch(e) {
-    const el = document.getElementById('db-status');
-    if(el) el.innerHTML = '<p style="font-size:12px;color:var(--text3)">Erro ao verificar status.</p>';
-  }
+    el.innerHTML=card('Impressora 1 - AZUL',uA,2)+card('Impressora 2 - CINZA',uC,2)+card('Ultimo pedido importado',uP,0)
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)"><i class="ti ti-refresh" style="font-size:20px;color:var(--text3)"></i><div><p style="font-size:12px;font-weight:500">Ultima sincronizacao</p><p style="font-size:11px;color:var(--text2)">'+new Date().toLocaleString('pt-BR')+'</p></div><button class="btn btn-xs" style="margin-left:auto" onclick="syncData()">Atualizar</button></div>';
+  }catch(e){if(el)el.innerHTML='<p style="color:var(--text3)">Erro ao verificar.</p>';}
 }
 
-async function checkAlertas(){
-  const fin=await apiGet('financeiro');
-  const hoje=today();
-  let count=0;
-  fin.slice(1).forEach(r=>{
-    if(r[8]==='pago'||r[8]==='recebido') return;
-    if(r[4]&&r[4]<=hoje) count++;
-  });
-  const badge=$('badge-alertas');
-  if(badge){badge.textContent=count;badge.style.display=count?'inline':'none';}
-}
+async function checkAlertas(){try{var fin=await apiGet('financeiro');var hoje=today();var count=0;fin.slice(1).forEach(function(r){if(r[8]==='pago'||r[8]==='recebido')return;if(r[4]&&r[4]<=hoje)count++;});var b=$('badge-alertas');if(b){b.textContent=count;b.style.display=count?'inline':'none';}}catch(e){}}
 
 async function renderAlertas(){
-  const fin=await apiGet('financeiro');
-  const hoje=today();
-  const alertas=[];
-  fin.slice(1).forEach(r=>{
-    if(r[8]==='pago'||r[8]==='recebido') return;
-    if(!r[4]) return;
-    const d=diffDays(hoje,r[4]);
-    if(d<0) alertas.push({tipo:'r',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu h\u00E1 ${Math.abs(d)} dia(s)`,ts:r[0]});
-    else if(d<=2) alertas.push({tipo:'a',msg:`<strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} vence em ${d===0?'hoje':d+' dia(s)'}`,ts:r[0]});
-  });
-  getClientes().forEach(c=>{
-    if(!c.ciclo||c.ciclo==='avulso') return;
-    const ult=c.ultimaBaixa||c.dataCad;
-    if(!ult) return;
-    const parts=ult.split('/');
-    if(parts.length<3) return;
-    const d=diffDays(new Date(parts[2]+'-'+parts[1]+'-'+parts[0]).toISOString().split('T')[0],hoje);
-    const lim={semanal:9,quinzenal:17,mensal:32}[c.ciclo]||32;
-    if(d>lim) alertas.push({tipo:'r',msg:`<strong>${c.nome}</strong> - fechamento ${c.ciclo} pendente h\u00E1 ${d} dias`});
-  });
-
-  $('main-content').innerHTML=`
-    <div class="card">
-      <div class="card-title"><i class="ti ti-bell"></i>alertas ativos (${alertas.length})</div>
-      ${!alertas.length
-        ?'<div class="alert alert-g"><i class="ti ti-check"></i> Nenhum alerta. Tudo em dia!</div>'
-        :alertas.map(a=>`<div class="alert alert-${a.tipo}"><i class="ti ti-alert-circle"></i><div>${a.msg}</div></div>`).join('')}
-    </div>`;
-  checkAlertas();
+  var fin=await apiGet('financeiro');var hoje=today();var alertas=[];
+  fin.slice(1).forEach(function(r){if(r[8]==='pago'||r[8]==='recebido')return;if(!r[4])return;var d=diffDays(hoje,r[4]);if(d<0)alertas.push({tipo:'r',msg:'<strong>'+(r[3]||'?')+'</strong> - '+fmtR(r[5])+' venceu ha '+Math.abs(d)+' dia(s)'});else if(d<=2)alertas.push({tipo:'a',msg:'<strong>'+(r[3]||'?')+'</strong> - '+fmtR(r[5])+' vence em '+(d===0?'hoje':d+' dia(s)')});});
+  var cls=await getClientes();cls.forEach(function(c){if(c.saldoDevedor>0)alertas.push({tipo:'a',msg:'<strong>'+c.nome+'</strong> - Saldo devedor: '+fmtR(c.saldoDevedor)});});
+  var html='<div class="card"><div class="card-title"><i class="ti ti-bell"></i>alertas ativos ('+alertas.length+')</div>';
+  if(!alertas.length)html+='<div class="alert alert-g"><i class="ti ti-check"></i> Nenhum alerta. Tudo em dia!</div>';
+  else alertas.forEach(function(a){html+='<div class="alert alert-'+a.tipo+'"><i class="ti ti-alert-circle"></i><div>'+a.msg+'</div></div>';});
+  html+='</div>';$('main-content').innerHTML=html;checkAlertas();
 }
-
-// =======================================================
-// CLIENTES
-// =======================================================
 async function renderClientes(){
-  const cls=await getClientes();
-  $('main-content').innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-      <input id="cli-busca" placeholder="Buscar..." oninput="filtrarClis()"
-        style="flex:1;min-width:160px;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">
-      <select id="cli-ciclo" onchange="filtrarClis()"
-        style="padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">
-        <option value="">Todos os ciclos</option>
-        <option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option>
-        <option value="mensal">Mensal</option><option value="avulso">Avulso</option>
-      </select>
-      <button class="btn btn-p btn-sm" onclick="abrirFormCliente()"><i class="ti ti-plus"></i> Novo cliente</button>
-    </div>
-    <div id="lista-clis"></div>`;
+  var mc=$('main-content');
+  mc.innerHTML='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">'
+    +'<input id="cli-busca" placeholder="Buscar..." oninput="filtrarClis()" style="flex:1;min-width:160px;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">'
+    +'<select id="cli-ciclo" onchange="filtrarClis()" style="padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">'
+    +'<option value="">Todos os ciclos</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="avulso">Avulso</option></select>'
+    +'<button class="btn btn-p btn-sm" onclick="abrirFormCliente()"><i class="ti ti-plus"></i> Novo cliente</button>'
+    +'</div><div id="lista-clis"><div class="loading"><span class="spin spin-dark"></span></div></div>';
   filtrarClis();
 }
 
 async function filtrarClis(){
-  const q=(v('cli-busca')||'').toLowerCase();
-  const ciclo=v('cli-ciclo')||'';
-  let cls=await getClientes();
-  if(q) cls=cls.filter(c=>c.nome.toLowerCase().includes(q)||(c.doc||'').includes(q)||(c.tel||'').includes(q));
-  if(ciclo) cls=cls.filter(c=>c.ciclo===ciclo);
-  const el=$('lista-clis');
-  if(!el) return;
+  var q=(v('cli-busca')||'').toLowerCase(),ciclo=v('cli-ciclo')||'';
+  var cls=await getClientes();
+  if(q)cls=cls.filter(function(c){return c.nome.toLowerCase().includes(q)||(c.doc||'').includes(q)||(c.tel||'').includes(q);});
+  if(ciclo)cls=cls.filter(function(c){return c.ciclo===ciclo;});
+  var el=$('lista-clis');if(!el)return;
   if(!cls.length){el.innerHTML='<div class="loading" style="padding:2rem">Nenhum cliente encontrado.</div>';return;}
-  const cc={semanal:'b-g',quinzenal:'b-b',mensal:'b-a',avulso:'b-gray'};
-  el.innerHTML=cls.map(c=>{
-    const hist=c.historicoPrecos||[];
-    const pa=hist.length?hist[hist.length-1].preco:parseFloat(c.preco_m||0);
-    return`<div class="card" style="padding:14px 16px;cursor:default">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-            <p style="font-weight:600;font-size:14px">${c.nome}</p>
-            <span class="badge ${cc[c.ciclo]||'b-gray'}">${c.ciclo||'avulso'}</span>
-            <span class="badge b-g" style="font-weight:600">${fmtR(pa)}/m</span>
-            ${hist.length>1?`<span style="font-size:11px;color:var(--text3)">${hist.length} pre\u00E7os</span>`:''}
-          </div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap">
-            ${c.tel?`<span style="font-size:12px;color:var(--text2)"><i class="ti ti-phone" style="font-size:13px"></i> ${c.tel}</span>`:''}
-            ${c.email?`<span style="font-size:12px;color:var(--text2)"><i class="ti ti-mail" style="font-size:13px"></i> ${c.email}</span>`:''}
-            ${c.pgto?`<span style="font-size:12px;color:var(--text2)"><i class="ti ti-credit-card" style="font-size:13px"></i> ${c.pgto}</span>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
-          <button class="btn btn-sm" onclick="editarCli(${c.id})"><i class="ti ti-edit"></i></button>
-          <button class="btn btn-sm" onclick="verHistCli(${c.id})"><i class="ti ti-history"></i></button>
-          ${c.saldoDevedor>0?`<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber);border-color:#ffd97a" onclick="verHistoricoPagamentos('${c.nome}')"><i class="ti ti-cash"></i> ${fmtR(c.saldoDevedor)}</button>`:''}
-          <button class="btn btn-sm btn-r" onclick="remCli(${c.id})"><i class="ti ti-trash"></i></button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  var cc={semanal:'b-g',quinzenal:'b-b',mensal:'b-a',avulso:'b-gray'};
+  var html='';
+  cls.forEach(function(c){
+    var hist=c.historicoPrecos||[];
+    var pa=hist.length?hist[hist.length-1].preco:parseFloat(c.preco_m||0);
+    var inf='';
+    if(c.tel)inf+='<span style="font-size:12px;color:var(--text2)"><i class="ti ti-phone" style="font-size:13px"></i> '+c.tel+'</span>';
+    if(c.email)inf+='<span style="font-size:12px;color:var(--text2)"><i class="ti ti-mail" style="font-size:13px"></i> '+c.email+'</span>';
+    if(c.pgto)inf+='<span style="font-size:12px;color:var(--text2)"><i class="ti ti-credit-card" style="font-size:13px"></i> '+c.pgto+'</span>';
+    var sb='';
+    if(c.saldoDevedor>0)sb='<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber);border-color:#ffd97a" onclick="verHistPag(\''+c.nome.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')+'\')">'+fmtR(c.saldoDevedor)+'</button>';
+    html+='<div class="card" style="padding:14px 16px">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+      +'<p style="font-weight:600;font-size:14px">'+c.nome+'</p>'
+      +'<span class="badge '+(cc[c.ciclo]||'b-gray')+'">'+(c.ciclo||'avulso')+'</span>'
+      +'<span class="badge b-g" style="font-weight:600">'+fmtR(pa)+'/m</span>'
+      +(hist.length>1?'<span style="font-size:11px;color:var(--text3)">'+hist.length+' precos</span>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:16px;flex-wrap:wrap">'+inf+'</div></div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
+      +'<button class="btn btn-sm" onclick="editarCli('+c.id+')"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn btn-sm" onclick="verHistCli('+c.id+')"><i class="ti ti-history"></i></button>'
+      +sb
+      +'<button class="btn btn-sm btn-r" onclick="remCli('+c.id+')"><i class="ti ti-trash"></i></button>'
+      +'</div></div></div>';
+  });
+  el.innerHTML=html;
 }
 
-let _editCliId=null;
-async function abrirFormCliente(id=null){
-  _editCliId=id;
-  const cls=await getClientes();
-  const c=id?cls.find(x=>x.id===id):null;
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">${c?'Editar '+c.nome:'Novo cliente'}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    <div class="g2">
-      <div class="f"><label>Nome *</label><input id="fc-nome" value="${c?.nome||''}"></div>
-      <div class="f"><label>CPF / CNPJ</label><input id="fc-doc" value="${c?.doc||''}"></div>
-    </div>
-    <div class="g2">
-      <div class="f"><label>Telefone</label><input id="fc-tel" value="${c?.tel||''}"></div>
-      <div class="f"><label>E-mail</label><input id="fc-email" value="${c?.email||''}"></div>
-    </div>
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">
-      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">PRE\u00C7O E CONDI\u00C7\u00D5ES</p>
-      <div class="g2">
-        <div class="f"><label>Pre\u00E7o por metro (R$) *</label>
-          <input type="number" id="fc-preco" value="${c?.preco_m||''}" step="0.01" style="font-size:16px;font-weight:600"></div>
-        <div class="f"><label>Ciclo de fechamento</label>
-          <select id="fc-ciclo">
-            <option value="semanal" ${c?.ciclo==='semanal'?'selected':''}>Semanal</option>
-            <option value="quinzenal" ${c?.ciclo==='quinzenal'?'selected':''}>Quinzenal</option>
-            <option value="mensal" ${c?.ciclo==='mensal'?'selected':''}>Mensal</option>
-            <option value="avulso" ${c?.ciclo==='avulso'?'selected':''}>Avulso</option>
-          </select>
-        </div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Forma de pagamento</label>
-          <select id="fc-pgto">
-            ${['Pix','Transfer\u00EAncia','Boleto','Dinheiro','A combinar'].map(p=>`<option ${c?.pgto===p?'selected':''}>${p}</option>`).join('')}
-          </select>
-        </div>
-        <div class="f"><label>Chave Pix</label><input id="fc-pix" value="${c?.pix||''}"></div>
-      </div>
-    </div>
-    <div class="f"><label>Observa\u00E7\u00F5es</label><input id="fc-obs" value="${c?.obs||''}"></div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn btn-p" onclick="salvarCli()" style="flex:1;justify-content:center">
-        <i class="ti ti-device-floppy"></i> ${c?'Salvar altera\u00E7\u00F5es':'Cadastrar cliente'}
-      </button>
-      <button class="btn" onclick="this.closest('.modal-bg').remove()">Cancelar</button>
-    </div>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+var _editCliId=null;
+async function abrirFormCliente(id){
+  _editCliId=id||null;
+  var cls=await getClientes();
+  var c=id?cls.find(function(x){return x.id===id;}):null;
+  var pgOpts=['Pix','Transferencia','Boleto','Dinheiro','A combinar'].map(function(p){return '<option'+(c&&c.pgto===p?' selected':'')+'>'+p+'</option>';}).join('');
+  var ciOpts=['semanal','quinzenal','mensal','avulso'].map(function(p){return '<option value="'+p+'"'+(c&&c.ciclo===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';}).join('');
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">'+(c?'Editar '+c.nome:'Novo cliente')+'</p>'
+    +'<button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +'<div class="g2"><div class="f"><label>Nome *</label><input id="fc-nome" value="'+(c?c.nome:'')+'"></div>'
+    +'<div class="f"><label>CPF/CNPJ</label><input id="fc-doc" value="'+(c?c.doc:'')+'"></div></div>'
+    +'<div class="g2"><div class="f"><label>Telefone</label><input id="fc-tel" value="'+(c?c.tel:'')+'"></div>'
+    +'<div class="f"><label>E-mail</label><input id="fc-email" value="'+(c?c.email:'')+'"></div></div>'
+    +'<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">'
+    +'<p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">PRECO E CONDICOES</p>'
+    +'<div class="g2"><div class="f"><label>Preco por metro (R$) *</label><input type="number" id="fc-preco" value="'+(c?c.preco_m:'')+'" step="0.01" style="font-size:16px;font-weight:600"></div>'
+    +'<div class="f"><label>Ciclo de fechamento</label><select id="fc-ciclo">'+ciOpts+'</select></div></div>'
+    +'<div class="g2"><div class="f"><label>Forma de pagamento</label><select id="fc-pgto">'+pgOpts+'</select></div>'
+    +'<div class="f"><label>Chave Pix</label><input id="fc-pix" value="'+(c?c.pix:'')+'"></div></div></div>'
+    +'<div class="f"><label>Observacoes</label><input id="fc-obs" value="'+(c?c.obs:'')+'"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:4px">'
+    +'<button class="btn btn-p" onclick="salvarCli()" style="flex:1;justify-content:center"><i class="ti ti-device-floppy"></i> '+(c?'Salvar':'Cadastrar')+'</button>'
+    +'<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Cancelar</button></div></div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
 function editarCli(id){abrirFormCliente(id);}
 
 async function salvarCli(){
-  const nome=v('fc-nome').trim();
-  const preco=parseFloat(v('fc-preco'))||0;
-  if(!nome){toast('Informe o nome');return;}
-  if(!preco){toast('Informe o pre\u00E7o');return;}
-  const cls=getClientes();
-  const hoje=new Date().toLocaleDateString('pt-BR');
-  const dados={nome,doc:v('fc-doc'),tel:v('fc-tel'),email:v('fc-email'),
-    preco_m:preco,ciclo:v('fc-ciclo'),pgto:v('fc-pgto'),pix:v('fc-pix'),obs:v('fc-obs')};
+  var nome=v('fc-nome').trim(),preco=parseFloat(v('fc-preco'))||0;
+  if(!nome){toast('Informe o nome');return;}if(!preco){toast('Informe o preco');return;}
+  var cls=await getClientes();var hoje=new Date().toLocaleDateString('pt-BR');
+  var dados={nome:nome,doc:v('fc-doc'),tel:v('fc-tel'),email:v('fc-email'),preco_m:preco,ciclo:v('fc-ciclo'),pgto:v('fc-pgto'),pix:v('fc-pix'),obs:v('fc-obs')};
   if(_editCliId){
-    const idx=cls.findIndex(c=>c.id===_editCliId);
+    var idx=cls.findIndex(function(c){return c.id===_editCliId;});
     if(idx>-1){
-      const h=cls[idx].historicoPrecos||[{preco:cls[idx].preco_m||0,data:cls[idx].dataCad||hoje,dataVigencia:cls[idx].dataCad||hoje,obs:'Pre\u00E7o inicial'}];
-      if(preco!==parseFloat(cls[idx].preco_m||0)){
-        h.push({preco,data:hoje,dataVigencia:today(),anterior:cls[idx].preco_m,obs:'Atualizado'});
-      }
-      cls[idx]={...cls[idx],...dados,historicoPrecos:h};
+      var h=cls[idx].historicoPrecos||[{preco:cls[idx].preco_m||0,data:cls[idx].dataCad||hoje,dataVigencia:cls[idx].dataCad||hoje,obs:'Preco inicial'}];
+      if(preco!==parseFloat(cls[idx].preco_m||0))h.push({preco:preco,data:hoje,dataVigencia:today(),anterior:cls[idx].preco_m,obs:'Atualizado'});
+      cls[idx]=Object.assign({},cls[idx],dados,{historicoPrecos:h});syncCliente(cls[idx]);
     }
     toast('Cliente atualizado!');
-  } else {
-    cls.push({id:Date.now(),...dados,dataCad:hoje,
-      historicoPrecos:[{preco,data:hoje,dataVigencia:today(),obs:'Pre\u00E7o inicial'}]});
-    apiPost('clientes',['timestamp','nome','doc','tel','email','ciclo','preco_m','pgto','pix','obs'],
-      [nowStr(),nome,v('fc-doc'),v('fc-tel'),v('fc-email'),v('fc-ciclo'),preco,v('fc-pgto'),v('fc-pix'),v('fc-obs')]);
+  }else{
+    var nid=Date.now();var novo=Object.assign({},dados,{id:nid,dataCad:hoje,saldoDevedor:0,historicoPrecos:[{preco:preco,data:hoje,dataVigencia:today(),obs:'Preco inicial'}],historicoPagamentos:[]});
+    cls.push(novo);syncCliente(novo);
     toast('Cliente cadastrado!');
   }
-  saveClientes(cls);
-  // Sincronizar com Google Sheets
-  const cliSalvo = _editCliId
-    ? cls.find(c=>c.id===_editCliId)
-    : cls[cls.length-1];
-  if(cliSalvo) syncCliente(cliSalvo);
-  document.querySelector('.modal-bg')&&document.querySelector('.modal-bg').remove();
-  renderClientes();
+  saveClientes(cls);var mb=document.querySelector('.modal-bg');if(mb)mb.remove();renderClientes();
 }
 
 async function remCli(id){
-  if(!confirm('Remover este cliente?')) return;
-  const cls=await getClientes();
-  saveClientes(cls.filter(c=>c.id!==id));
-  _cliCache=null;
-  delete _cache['clientes'];
-  toast('Removido');renderClientes();
+  if(!confirm('Remover este cliente?'))return;
+  var cls=await getClientes();saveClientes(cls.filter(function(c){return c.id!==id;}));_cliCache=null;delete _cache['clientes'];toast('Removido');renderClientes();
 }
 
 async function verHistCli(id){
-  const cls=await getClientes();
-  const c=cls.find(x=>x.id===id);
-  if(!c) return;
-  const hist=c.historicoPrecos||[];
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Hist\u00F3rico - ${c.nome}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    ${hist.length?hist.slice().reverse().map((h,i)=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <span class="badge b-g" style="font-size:14px;padding:4px 10px">${fmtR(h.preco)}/m</span>
-          ${h.anterior?`<span style="font-size:11px;margin-left:8px;color:${h.preco>h.anterior?'var(--green)':'var(--red)'}">
-            <i class="ti ti-arrow-${h.preco>h.anterior?'up':'down'}"></i> vs ${fmtR(h.anterior)}</span>`:''}
-          ${h.obs?`<p style="font-size:11px;color:var(--text2);margin-top:2px">${h.obs}</p>`:''}
-        </div>
-        <div style="text-align:right;font-size:12px;color:var(--text2)">
-          <p>Vigente: ${h.dataVigencia||h.data}</p>
-          ${i===0?'<span class="badge b-g">atual</span>':''}
-        </div>
-      </div>`).join(''):'<p style="color:var(--text3)">Sem hist\u00F3rico.</p>'}
-    <button class="btn btn-b btn-full" style="margin-top:12px" onclick="this.closest('.modal-bg').remove();abrirNovoPreco(${id})">
-      <i class="ti ti-plus"></i> Novo pre\u00E7o
-    </button>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+  var cls=await getClientes();var c=cls.find(function(x){return x.id===id;});if(!c)return;
+  var hist=c.historicoPrecos||[];var rows='';
+  hist.slice().reverse().forEach(function(h,i){
+    var ant=h.anterior?'<span style="font-size:11px;margin-left:8px;color:'+(h.preco>h.anterior?'var(--green)':'var(--red)')+'">vs '+fmtR(h.anterior)+'</span>':'';
+    rows+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><div><span class="badge b-g" style="font-size:14px;padding:4px 10px">'+fmtR(h.preco)+'/m</span>'+ant+(h.obs?'<p style="font-size:11px;color:var(--text2);margin-top:2px">'+h.obs+'</p>':'')+'</div><div style="text-align:right;font-size:12px;color:var(--text2)"><p>Vigente: '+(h.dataVigencia||h.data)+'</p>'+(i===0?'<span class="badge b-g">atual</span>':'')+'</div></div>';
+  });
+  if(!rows)rows='<p style="color:var(--text3)">Sem historico.</p>';
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">Historico - '+c.nome+'</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +rows+'<button class="btn btn-b btn-full" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove();abrirNovoPreco('+id+')"><i class="ti ti-plus"></i> Novo preco</button></div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
-function abrirNovoPreco(cliId){
-  const c=getClientes().find(x=>x.id===cliId);
-  if(!c) return;
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal" style="max-width:360px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:15px;font-weight:600">Novo pre\u00E7o - ${c.nome}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Pre\u00E7o atual: <strong>${fmtR(c.preco_m||0)}/m</strong></p>
-    <div class="f"><label>Novo pre\u00E7o (R$/m) *</label><input type="number" id="np-preco" step="0.01" style="font-size:18px;font-weight:600"></div>
-    <div class="f"><label>V\u00E1lido a partir de *</label><input type="date" id="np-vig" value="${today()}"></div>
-    <div class="f"><label>Motivo</label><input id="np-obs" placeholder="Ex: reajuste, negocia\u00E7\u00E3o..."></div>
-    <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarNovoPreco(${cliId})">
-      <i class="ti ti-check"></i> Confirmar novo pre\u00E7o
-    </button>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+async function abrirNovoPreco(cliId){
+  var cls=await getClientes();var c=cls.find(function(x){return x.id===cliId;});if(!c)return;
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal" style="max-width:360px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:15px;font-weight:600">Novo preco - '+c.nome+'</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +'<p style="font-size:13px;color:var(--text2);margin-bottom:12px">Preco atual: <strong>'+fmtR(c.preco_m||0)+'/m</strong></p>'
+    +'<div class="f"><label>Novo preco (R$/m) *</label><input type="number" id="np-preco" step="0.01" style="font-size:18px;font-weight:600"></div>'
+    +'<div class="f"><label>Valido a partir de *</label><input type="date" id="np-vig" value="'+today()+'"></div>'
+    +'<div class="f"><label>Motivo</label><input id="np-obs" placeholder="Ex: reajuste..."></div>'
+    +'<button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarNovoPreco('+cliId+')"><i class="ti ti-check"></i> Confirmar novo preco</button></div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
 async function salvarNovoPreco(cliId){
-  const preco=parseFloat(v('np-preco'))||0;
-  const vig=v('np-vig');
-  if(!preco){toast('Informe o pre\u00E7o');return;}
-  if(!vig){toast('Informe a data de vig\u00EAncia');return;}
-  const cls=await getClientes();
-  const idx=cls.findIndex(c=>c.id===cliId);
-  if(idx<0) return;
-  const ant=cls[idx].preco_m||0;
-  const hist=cls[idx].historicoPrecos||[];
-  hist.push({preco,data:new Date().toLocaleDateString('pt-BR'),dataVigencia:vig,anterior:ant,obs:v('np-obs')||'Atualizado'});
-  cls[idx].historicoPrecos=hist;
-  cls[idx].preco_m=preco;
-  saveClientes(cls);
-  apiPost('precos_historico',['timestamp','cliente','preco','data_vigencia','anterior','obs'],[nowStr(),cls[idx].nome,preco,vig,ant,v('np-obs')]);
-  toast(`Pre\u00E7o de ${cls[idx].nome} -> ${fmtR(preco)}/m OK`);
-  document.querySelector('.modal-bg')?.remove();
-  renderClientes();
+  var preco=parseFloat(v('np-preco'))||0,vig=v('np-vig');
+  if(!preco){toast('Informe o preco');return;}if(!vig){toast('Informe a data');return;}
+  var cls=await getClientes();var idx=cls.findIndex(function(c){return c.id===cliId;});if(idx<0)return;
+  var ant=cls[idx].preco_m||0;var hist=cls[idx].historicoPrecos||[];
+  hist.push({preco:preco,data:new Date().toLocaleDateString('pt-BR'),dataVigencia:vig,anterior:ant,obs:v('np-obs')||'Atualizado'});
+  cls[idx].historicoPrecos=hist;cls[idx].preco_m=preco;
+  saveClientes(cls);syncCliente(cls[idx]);
+  toast('Preco de '+cls[idx].nome+' -> '+fmtR(preco)+'/m OK');
+  var mb=document.querySelector('.modal-bg');if(mb)mb.remove();renderClientes();
 }
-
-// =======================================================
-// PRODU\u00C7\u00C3O
-// =======================================================
 async function renderProducao(){
-  const isA=CU.perfil==='admin';
-  let maq=CU.maquina||1;
-  const rows=await apiGet('producao');
-  const ultimos=rows.slice(1).filter(r=>parseInt(r[1])===maq).reverse().slice(0,6);
-
-  $('main-content').innerHTML=`
-    ${isA?`<div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="btn ${maq===1?'btn-b':''}" style="flex:1;justify-content:center" onclick="CU.maquina=1;renderProducao()">
-        <i class="ti ti-printer"></i> Impressora 1 - AZUL</button>
-      <button class="btn ${maq===2?'btn-p':''}" style="flex:1;justify-content:center" onclick="CU.maquina=2;renderProducao()">
-        <i class="ti ti-printer"></i> Impressora 2 - CINZA</button>
-    </div>`:''}
-    <div class="card">
-      <div class="card-title"><i class="ti ti-calendar"></i>turno</div>
-      <div class="g3">
-        <div class="f"><label>Data</label><input type="date" id="p-data" value="${today()}"></div>
-        <div class="f"><label>Turno</label><select id="p-turno"><option>Manh\u00E3</option><option>Tarde</option><option>Noite</option></select></div>
-        <div class="f"><label>Operador</label><input id="p-op" value="${CU.nome}"></div>
-      </div>
-    </div>
-    <div class="g2">
-      <div class="card">
-        <div class="card-title"><i class="ti ti-ruler"></i>filme</div>
-        <div class="f"><label>Metragem produzida (m)</label><input type="number" id="p-metros" placeholder="0" min="0" step="0.1"></div>
-        <div class="f"><label>Perdas / descartes (m)</label><input type="number" id="p-perdas" placeholder="0" min="0" step="0.1"></div>
-      </div>
-      <div class="card">
-        <div class="card-title"><i class="ti ti-bolt"></i>energia & manuten\u00E7\u00E3o</div>
-        <div class="f"><label>Energia (kWh)</label><input type="number" id="p-kwh" placeholder="0" min="0" step="0.1"></div>
-        <div class="f"><label>Manuten\u00E7\u00E3o (R$)</label><input type="number" id="p-man" placeholder="0" min="0" step="0.01"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-droplet"></i>tintas consumidas (g)</div>
-      <div class="g3">
-        ${[['tw','White','#e5e5e5'],['ty','Yellow','#facc15'],['tm','Magenta','#ec4899'],['tc','Cyan','#22d3ee'],['tk','Black','#1a1a1a']].map(([id,l,c])=>`
-          <div class="f"><label style="display:flex;align-items:center;gap:6px">
-            <span style="width:10px;height:10px;border-radius:50%;background:${c};border:1px solid #ddd;flex-shrink:0"></span>${l}
-          </label><input type="number" id="p-${id}" placeholder="0" min="0" step="1"></div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-flask"></i>tpu & poliamida (g)</div>
-      <div class="g2">
-        <div class="f"><label>TPU</label><input type="number" id="p-tpu" placeholder="0" min="0" step="1"></div>
-        <div class="f"><label>Poliamida</label><input type="number" id="p-pol" placeholder="0" min="0" step="1"></div>
-      </div>
-      <div class="f" style="margin-top:4px"><label>Observa\u00E7\u00F5es</label><input id="p-obs" placeholder="Opcional"></div>
-    </div>
-    <button class="btn btn-p btn-full" id="btn-sp" onclick="salvarProducao()">
-      <i class="ti ti-device-floppy"></i> Salvar lan\u00E7amento - Impressora ${maq}
-    </button>
-    <div style="margin-top:16px">
-      <p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">\u00DAltimos lan\u00E7amentos</p>
-      <div style="overflow-x:auto">
-        <table class="tbl">
-          <thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead>
-          <tbody>${ultimos.length?ultimos.map(r=>`<tr>
-            <td>${fmtData(r[2])}</td><td>${r[3]||''}</td><td>${r[4]||''}</td>
-            <td><strong>${fmt(r[5])} m</strong></td><td>${fmt(r[13]||0)} m</td><td>${fmt(r[14]||0,1)}</td>
-          </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum lan\u00E7amento ainda.</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  var isA=CU.perfil==='admin',maq=CU.maquina||1;
+  var rows=await apiGet('producao');
+  var ult=rows.slice(1).filter(function(r){return parseInt(r[1])===maq;}).reverse().slice(0,6);
+  var tabH='';if(isA)tabH='<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn '+(maq===1?'btn-b':'')+'" style="flex:1;justify-content:center" onclick="CU.maquina=1;renderProducao()"><i class="ti ti-printer"></i> Impressora 1 - AZUL</button><button class="btn '+(maq===2?'btn-p':'')+'" style="flex:1;justify-content:center" onclick="CU.maquina=2;renderProducao()"><i class="ti ti-printer"></i> Impressora 2 - CINZA</button></div>';
+  var ultR='';ult.forEach(function(r){ultR+='<tr><td>'+fmtData(r[2])+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td><strong>'+fmt(r[5])+'m</strong></td><td>'+fmt(r[13]||0)+'m</td><td>'+fmt(r[14]||0,1)+'</td></tr>';});
+  if(!ultR)ultR='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum lancamento ainda.</td></tr>';
+  $('main-content').innerHTML=tabH
+    +'<div class="card"><div class="card-title"><i class="ti ti-calendar"></i>turno</div><div class="g3">'
+    +'<div class="f"><label>Data</label><input type="date" id="p-data" value="'+today()+'"></div>'
+    +'<div class="f"><label>Turno</label><select id="p-turno"><option>Manha</option><option>Tarde</option><option>Noite</option></select></div>'
+    +'<div class="f"><label>Operador</label><input id="p-op" value="'+CU.nome+'"></div></div></div>'
+    +'<div class="g2"><div class="card"><div class="card-title"><i class="ti ti-ruler"></i>filme</div>'
+    +'<div class="f"><label>Metragem produzida (m)</label><input type="number" id="p-metros" placeholder="0" min="0" step="0.1"></div>'
+    +'<div class="f"><label>Perdas / descartes (m)</label><input type="number" id="p-perdas" placeholder="0" min="0" step="0.1"></div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-bolt"></i>energia e manutencao</div>'
+    +'<div class="f"><label>Energia (kWh)</label><input type="number" id="p-kwh" placeholder="0" min="0" step="0.1"></div>'
+    +'<div class="f"><label>Manutencao (R$)</label><input type="number" id="p-man" placeholder="0" min="0" step="0.01"></div></div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-droplet"></i>tintas consumidas (g)</div><div class="g3">'
+    +'<div class="f"><label>White</label><input type="number" id="p-tw" placeholder="0" min="0" step="1"></div>'
+    +'<div class="f"><label>Yellow</label><input type="number" id="p-ty" placeholder="0" min="0" step="1"></div>'
+    +'<div class="f"><label>Magenta</label><input type="number" id="p-tm" placeholder="0" min="0" step="1"></div>'
+    +'<div class="f"><label>Cyan</label><input type="number" id="p-tc" placeholder="0" min="0" step="1"></div>'
+    +'<div class="f"><label>Black</label><input type="number" id="p-tk" placeholder="0" min="0" step="1"></div></div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-flask"></i>tpu e poliamida (g)</div><div class="g2">'
+    +'<div class="f"><label>TPU</label><input type="number" id="p-tpu" placeholder="0" min="0" step="1"></div>'
+    +'<div class="f"><label>Poliamida</label><input type="number" id="p-pol" placeholder="0" min="0" step="1"></div></div>'
+    +'<div class="f" style="margin-top:4px"><label>Observacoes</label><input id="p-obs" placeholder="Opcional"></div></div>'
+    +'<button class="btn btn-p btn-full" id="btn-sp" onclick="salvarProducao()"><i class="ti ti-device-floppy"></i> Salvar lancamento - Impressora '+maq+'</button>'
+    +'<div style="margin-top:16px"><p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Ultimos lancamentos</p>'
+    +'<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Turno</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>kWh</th></tr></thead><tbody>'+ultR+'</tbody></table></div></div>';
 }
 
 async function salvarProducao(){
-  const metros=n('p-metros');
-  if(!metros){toast('Informe a metragem');return;}
-  const btn=$('btn-sp');
-  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando...';
-  const maq=CU.maquina||1;
-  await apiPost('producao',
-    ['timestamp','maquina','data','turno','operador','metros','white_g','yellow_g','magenta_g','cyan_g','black_g','tpu_g','poliamida_g','perdas_m','energia_kwh','manutencao_r','obs'],
-    [nowStr(),maq,v('p-data'),v('p-turno'),v('p-op'),metros,n('p-tw'),n('p-ty'),n('p-tm'),n('p-tc'),n('p-tk'),n('p-tpu'),n('p-pol'),n('p-perdas'),n('p-kwh'),n('p-man'),v('p-obs')]);
-  toast('Lan\u00E7amento salvo!');
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lan\u00E7amento - Impressora '+maq;
-  ['p-metros','p-perdas','p-tw','p-ty','p-tm','p-tc','p-tk','p-tpu','p-pol','p-kwh','p-man','p-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
-  delete _cache['producao'];
-  renderProducao();
+  var metros=n('p-metros');if(!metros){toast('Informe a metragem');return;}
+  var btn=$('btn-sp');if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando...';}
+  var maq=CU.maquina||1;
+  await apiPost('producao',['timestamp','maquina','data','turno','operador','metros','white_g','yellow_g','magenta_g','cyan_g','black_g','tpu_g','poliamida_g','perdas_m','energia_kwh','manutencao_r','obs'],[nowStr(),maq,v('p-data'),v('p-turno'),v('p-op'),metros,n('p-tw'),n('p-ty'),n('p-tm'),n('p-tc'),n('p-tk'),n('p-tpu'),n('p-pol'),n('p-perdas'),n('p-kwh'),n('p-man'),v('p-obs')]);
+  toast('Lancamento salvo!');if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar lancamento - Impressora '+maq;}
+  ['p-metros','p-perdas','p-tw','p-ty','p-tm','p-tc','p-tk','p-tpu','p-pol','p-kwh','p-man','p-obs'].forEach(function(id){var el=$(id);if(el)el.value='';});
+  delete _cache['producao'];renderProducao();
 }
 
-// =======================================================
-// PEDIDOS
-// =======================================================
+var _pedDados=[];
 async function renderPedidos(){
-  const rows=await apiGet('pedidos');
-  const cls=getClientes();
-  const dados=rows.slice(1).reverse();
-
-  $('main-content').innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <input id="ped-busca" placeholder="Buscar cliente ou OS..." oninput="filtrarPedidos()"
-        style="flex:1;min-width:150px;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">
-      <select id="ped-status" onchange="filtrarPedidos()"
-        style="padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">
-        <option value="">Todos os status</option>
-        <option>Aguardando</option><option>Em produ\u00E7\u00E3o</option><option>Conclu\u00EDdo</option><option>Entregue</option>
-      </select>
-      <button class="btn btn-p btn-sm" onclick="abrirFormPedido()"><i class="ti ti-plus"></i> Novo pedido</button>
-    </div>
-    <div id="ped-lista" style="overflow-x:auto"></div>`;
-
-  window._pedDados=dados;
-  filtrarPedidos();
+  var rows=await apiGet('pedidos'),cls=await getClientes();
+  _pedDados=rows.slice(1).reverse();
+  var cliOpts=cls.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('');
+  $('main-content').innerHTML='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+    +'<input id="ped-busca" placeholder="Buscar cliente ou OS..." oninput="filtrarPedidos()" style="flex:1;min-width:150px;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">'
+    +'<select id="ped-status" onchange="filtrarPedidos()" style="padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px"><option value="">Todos</option><option>Aguardando</option><option>Em producao</option><option>Concluido</option><option>Entregue</option></select>'
+    +'<button class="btn btn-p btn-sm" onclick="abrirFormPedido()"><i class="ti ti-plus"></i> Novo pedido</button>'
+    +'</div><div id="ped-lista" style="overflow-x:auto"></div>';
+  window._cliOpts=cliOpts;filtrarPedidos();
 }
 
 function filtrarPedidos(){
-  const q=(v('ped-busca')||'').toLowerCase();
-  const st=v('ped-status')||'';
-  let d=window._pedDados||[];
-  if(q) d=d.filter(r=>(r[3]||'').toLowerCase().includes(q)||(r[4]||'').toLowerCase().includes(q));
-  if(st) d=d.filter(r=>r[9]===st);
-  const sc={Aguardando:'b-a','Em produ\u00E7\u00E3o':'b-b',Conclu\u00EDdo:'b-g',Entregue:'b-g',importado:'b-gray'};
-  const el=$('ped-lista');
-  if(!el) return;
-  el.innerHTML=`<table class="tbl">
-    <thead><tr><th>Data</th><th>Cliente</th><th>OS / Ref.</th><th>Descri\u00E7\u00E3o</th><th>Metros</th><th>Total</th><th>Status</th></tr></thead>
-    <tbody>${d.slice(0,50).map(r=>`<tr>
-      <td style="white-space:nowrap">${fmtData(r[1])}</td>
-      <td><strong>${r[3]||''}</strong></td>
-      <td style="font-size:12px;color:var(--text2)">${r[4]||''}</td>
-      <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r[10]||''}</td>
-      <td>${fmt(r[5])} m</td>
-      <td><strong>${fmtR(r[7])}</strong></td>
-      <td><span class="badge ${sc[r[9]]||'b-a'}">${r[9]||''}</span></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+  var q=(v('ped-busca')||'').toLowerCase(),st=v('ped-status')||'',d=_pedDados||[];
+  if(q)d=d.filter(function(r){return (r[3]||'').toLowerCase().includes(q)||(r[4]||'').toLowerCase().includes(q);});
+  if(st)d=d.filter(function(r){return r[9]===st;});
+  var sc={Aguardando:'b-a','Em producao':'b-b',Concluido:'b-g',Entregue:'b-g',importado:'b-gray'};
+  var rows='';d.slice(0,50).forEach(function(r){rows+='<tr><td style="white-space:nowrap">'+fmtData(r[1])+'</td><td><strong>'+(r[3]||'')+'</strong></td><td style="font-size:12px;color:var(--text2)">'+(r[4]||'')+'</td><td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r[10]||'')+'</td><td>'+fmt(r[5])+'m</td><td><strong>'+fmtR(r[7])+'</strong></td><td><span class="badge '+(sc[r[9]]||'b-a')+'">'+(r[9]||'')+'</span></td></tr>';});
+  if(!rows)rows='<tr><td colspan="7" style="text-align:center;color:var(--text3)">Nenhum pedido encontrado.</td></tr>';
+  var el=$('ped-lista');if(el)el.innerHTML='<table class="tbl"><thead><tr><th>Data</th><th>Cliente</th><th>OS</th><th>Descricao</th><th>Metros</th><th>Total</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
-function abrirFormPedido(){
-  const cls=getClientes();
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Novo pedido</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    <div class="g2">
-      <div class="f"><label>Data</label><input type="date" id="pd-data" value="${today()}"></div>
-      <div class="f"><label>OS / N\u00BA pedido</label><input id="pd-os" placeholder="OS-0042"></div>
-    </div>
-    <div class="g2">
-      <div class="f"><label>Cliente *</label>
-        <input id="pd-cli" list="pd-cls-dl" placeholder="Nome do cliente" oninput="preencherPrecoPedido()">
-        <datalist id="pd-cls-dl">${cls.map(c=>`<option value="${c.nome}">`).join('')}</datalist>
-      </div>
-      <div class="f"><label>Impressora</label>
-        <select id="pd-maq"><option value="1">Impressora 1 (AZUL)</option><option value="2">Impressora 2 (CINZA)</option></select>
-      </div>
-    </div>
-    <div class="g3">
-      <div class="f"><label>Metros</label><input type="number" id="pd-m" placeholder="0" min="0" step="0.1" oninput="calcPed()"></div>
-      <div class="f"><label>Pre\u00E7o/m (R$)</label><input type="number" id="pd-p" placeholder="0.00" min="0" step="0.01" oninput="calcPed()"></div>
-      <div class="f"><label>Total (R$)</label><input type="number" id="pd-t" readonly style="background:var(--surface2);font-weight:600"></div>
-    </div>
-    <div class="g2">
-      <div class="f"><label>Status</label>
-        <select id="pd-st"><option>Aguardando</option><option>Em produ\u00E7\u00E3o</option><option>Conclu\u00EDdo</option><option>Entregue</option></select>
-      </div>
-      <div class="f"><label>Per\u00EDodo</label>
-        <select id="pd-per"><option>Di\u00E1rio</option><option>Semanal</option><option>Mensal</option><option>Avulso</option></select>
-      </div>
-    </div>
-    <div class="f"><label>Descri\u00E7\u00E3o / arte</label><input id="pd-desc" placeholder="Ex: camiseta branca, estampa frontal 30x40"></div>
-    <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarPedido()">
-      <i class="ti ti-device-floppy"></i> Salvar pedido
-    </button>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+async function abrirFormPedido(){
+  var cls=await getClientes();var cliOpts=cls.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('');
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">Novo pedido</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +'<div class="g2"><div class="f"><label>Data</label><input type="date" id="pd-data" value="'+today()+'"></div><div class="f"><label>OS / Nr pedido</label><input id="pd-os" placeholder="OS-0042"></div></div>'
+    +'<div class="g2"><div class="f"><label>Cliente *</label><input id="pd-cli" list="pd-cls-dl" placeholder="Nome do cliente" oninput="preencherPrecoPedido()"><datalist id="pd-cls-dl">'+cliOpts+'</datalist></div>'
+    +'<div class="f"><label>Impressora</label><select id="pd-maq"><option value="1">Impressora 1 (AZUL)</option><option value="2">Impressora 2 (CINZA)</option></select></div></div>'
+    +'<div class="g3"><div class="f"><label>Metros</label><input type="number" id="pd-m" placeholder="0" min="0" step="0.1" oninput="calcPed()"></div><div class="f"><label>Preco/m (R$)</label><input type="number" id="pd-p" placeholder="0.00" min="0" step="0.01" oninput="calcPed()"></div><div class="f"><label>Total (R$)</label><input type="number" id="pd-t" readonly style="background:var(--surface2);font-weight:600"></div></div>'
+    +'<div class="g2"><div class="f"><label>Status</label><select id="pd-st"><option>Aguardando</option><option>Em producao</option><option>Concluido</option><option>Entregue</option></select></div><div class="f"><label>Periodo</label><select id="pd-per"><option>Diario</option><option>Semanal</option><option>Mensal</option><option>Avulso</option></select></div></div>'
+    +'<div class="f"><label>Descricao / arte</label><input id="pd-desc" placeholder="Ex: camiseta branca, estampa frontal 30x40"></div>'
+    +'<button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarPedido()"><i class="ti ti-device-floppy"></i> Salvar pedido</button></div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
-async function preencherPrecoPedido(){
-  const cli=v('pd-cli').trim();
-  const vm=await getPrecoCli(cli,today());
-  if(vm&&$('pd-p')){$('pd-p').value=vm;calcPed();}
-}
-
-function calcPed(){
-  const m=parseFloat(v('pd-m'))||0,p=parseFloat(v('pd-p'))||0;
-  const el=$('pd-t');if(el)el.value=(m*p).toFixed(2);
-}
-
-async function salvarPedido(){
-  const cli=v('pd-cli').trim();
-  if(!cli){toast('Informe o cliente');return;}
-  const m=parseFloat(v('pd-m'))||0,p=parseFloat(v('pd-p'))||0;
-  await apiPost('pedidos',
-    ['timestamp','data','periodo','cliente','num_pedido','metros','preco_m','total','maquina','status','descricao','obs'],
-    [nowStr(),v('pd-data'),v('pd-per'),cli,v('pd-os'),m,p,(m*p).toFixed(2),v('pd-maq'),v('pd-st'),v('pd-desc'),'']);
-  toast('Pedido salvo!');
-  document.querySelector('.modal-bg')?.remove();
-  renderPedidos();
-}
-
-// =======================================================
-// FINANCEIRO
-// =======================================================
+async function preencherPrecoPedido(){var cli=v('pd-cli').trim();var vm=await getPrecoCli(cli,today());var el=$('pd-p');if(vm&&el){el.value=vm;calcPed();}}
+function calcPed(){var el=$('pd-t');if(el)el.value=((parseFloat(v('pd-m'))||0)*(parseFloat(v('pd-p'))||0)).toFixed(2);}
+async function salvarPedido(){var cli=v('pd-cli').trim();if(!cli){toast('Informe o cliente');return;}var m2=parseFloat(v('pd-m'))||0,p=parseFloat(v('pd-p'))||0;await apiPost('pedidos',['timestamp','data','periodo','cliente','num_pedido','metros','preco_m','total','maquina','status','descricao','obs'],[nowStr(),v('pd-data'),v('pd-per'),cli,v('pd-os'),m2,p,(m2*p).toFixed(2),v('pd-maq'),v('pd-st'),v('pd-desc'),'']);toast('Pedido salvo!');var mb=document.querySelector('.modal-bg');if(mb)mb.remove();renderPedidos();}
+var _finDados=[];
 async function renderFinanceiro(){
-  const rows=await apiGet('financeiro');
-  const dados=rows.slice(1);
-  const hoje=today();
-  const rec=dados.filter(r=>r[2]==='receber'&&r[8]!=='recebido');
-  const pag=dados.filter(r=>r[2]==='pagar'&&r[8]!=='pago');
-  const vencidas=dados.filter(r=>r[8]!=='pago'&&r[8]!=='recebido'&&r[4]&&r[4]<hoje);
-  const sumV=a=>a.reduce((s,r)=>s+(parseFloat(r[5])||0),0);
-
-  $('main-content').innerHTML=`
-    <div class="g3" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-l">A receber</div><div class="kpi-v" style="color:var(--green)">${fmtR(sumV(rec))}</div></div>
-      <div class="kpi"><div class="kpi-l">A pagar</div><div class="kpi-v" style="color:var(--red)">${fmtR(sumV(pag))}</div></div>
-      <div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">${fmtR(sumV(rec)-sumV(pag))}</div></div>
-    </div>
-    ${vencidas.map(r=>`<div class="alert alert-r"><i class="ti ti-alert-circle"></i>
-      <div style="flex:1"><strong>${r[3]||'?'}</strong> - ${fmtR(r[5])} venceu em ${r[4]}
-        <button class="btn btn-xs btn-p" style="margin-left:8px" onclick="darBaixa('${r[0]}')">Dar baixa</button>
-      </div></div>`).join('')}
-    <div class="tabs">
-      <button class="tab-btn on" onclick="finTab('rec',this)">A receber</button>
-      <button class="tab-btn" onclick="finTab('pag',this)">A pagar</button>
-      <button class="tab-btn" onclick="finTab('fechamento',this)">Fechamento</button>
-      <button class="tab-btn" onclick="finTab('nova',this)">Nova conta</button>
-    </div>
-    <div id="fin-panel"></div>`;
-
-  window._finDados=dados;
+  var rows=await apiGet('financeiro');_finDados=rows.slice(1);
+  var hoje=today();
+  var rec=_finDados.filter(function(r){return r[2]==='receber'&&r[8]!=='recebido';});
+  var pag=_finDados.filter(function(r){return r[2]==='pagar'&&r[8]!=='pago';});
+  var venc=_finDados.filter(function(r){return r[8]!=='pago'&&r[8]!=='recebido'&&r[4]&&r[4]<hoje;});
+  function sV(a){return a.reduce(function(s,r){return s+(parseFloat(r[5])||0);},0);}
+  var alH='';venc.forEach(function(r){alH+='<div class="alert alert-r"><i class="ti ti-alert-circle"></i><div style="flex:1"><strong>'+(r[3]||'?')+'</strong> - '+fmtR(r[5])+' venceu em '+fmtData(r[4])+'<button class="btn btn-xs btn-p" style="margin-left:8px" onclick="darBaixa(\''+r[0]+'\')">Dar baixa</button></div></div>';});
+  $('main-content').innerHTML='<div class="g3" style="margin-bottom:16px">'
+    +'<div class="kpi"><div class="kpi-l">A receber</div><div class="kpi-v" style="color:var(--green)">'+fmtR(sV(rec))+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">A pagar</div><div class="kpi-v" style="color:var(--red)">'+fmtR(sV(pag))+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">'+fmtR(sV(rec)-sV(pag))+'</div></div></div>'
+    +alH
+    +'<div class="tabs"><button class="tab-btn on" onclick="finTab(\'rec\',this)">A receber</button><button class="tab-btn" onclick="finTab(\'pag\',this)">A pagar</button><button class="tab-btn" onclick="finTab(\'fechamento\',this)">Fechamento</button><button class="tab-btn" onclick="finTab(\'nova\',this)">Nova conta</button></div>'
+    +'<div id="fin-panel"></div>';
   finTab('rec',document.querySelector('.tab-btn.on'));
 }
 
 async function finTab(t,btn){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
-  if(btn) btn.classList.add('on');
-  const dados=window._finDados||[];
-  const hoje=today();
-  const p=$('fin-panel');if(!p) return;
-
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');
+  var dados=_finDados||[],hoje=today(),p=$('fin-panel');if(!p)return;
   if(t==='rec'||t==='pag'){
-    const tipo=t==='rec'?'receber':'pagar';
-    const sc=(r)=>{const pg=r[8]==='pago'||r[8]==='recebido';const at=!pg&&r[4]&&r[4]<hoje;return pg?'b-g':at?'b-r':'b-a';};
-    const sl=(r)=>{const pg=r[8]==='pago'||r[8]==='recebido';const at=!pg&&r[4]&&r[4]<hoje;return pg?'pago':at?'vencido':'pendente';};
-    const fil=dados.filter(r=>r[2]===tipo);
-    p.innerHTML=`<div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>Cliente/Forn.</th><th>Refer\u00EAncia</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
-      <tbody>${fil.slice(0,40).map(r=>`<tr>
-        <td>${fmtData(r[1])}</td><td><strong>${r[3]||''}</strong></td>
-        <td style="font-size:12px;color:var(--text2)">${r[6]||''}</td>
-        <td><strong>${fmtR(r[5])}</strong></td>
-        <td style="${r[4]&&r[4]<hoje&&r[8]!=='pago'&&r[8]!=='recebido'?'color:var(--red);font-weight:500':''}">${r[4]||''}</td>
-        <td><span class="badge ${sc(r)}">${sl(r)}</span></td>
-        <td>${r[8]!=='pago'&&r[8]!=='recebido'?`<button class="btn btn-xs btn-p" onclick="darBaixa('${r[0]}')">Baixa</button>`:''}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
-  } else if(t==='fechamento'){
-    const cls=await getClientes();
-    const contas=await getContas();
-    p.innerHTML=`<div class="card">
-      <div class="card-title"><i class="ti ti-calculator"></i>gerar fechamento</div>
-      <div class="g3">
-        <div class="f"><label>Cliente</label>
-          <select id="fech-cli" onchange="carregarJobsCliente()">
-            <option value="">Selecione...</option>
-            ${cls.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('')}
-          </select>
-        </div>
-        <div class="f"><label>De</label><input type="date" id="fech-de" onchange="carregarJobsCliente()"></div>
-        <div class="f"><label>At\u00E9</label><input type="date" id="fech-ate" value="${today()}" onchange="carregarJobsCliente()"></div>
-      </div>
-      <div class="f" style="margin-top:4px">
-        <label>Conta para recebimento</label>
-        <select id="fech-conta">
-          <option value="">Selecione a conta...</option>
-          ${contas.map((c,i)=>`<option value="${i}">${c.tipo==='pix'?'Pix':'Transfer\u00EAncia'} - ${c.desc} (${c.chave})</option>`).join('')}
-        </select>
-      </div>
-      ${!contas.length?`<div class="alert alert-a" style="margin-top:8px"><i class="ti ti-alert-circle"></i>
-        Nenhuma conta cadastrada. <a href="#" onclick="goNav('config')" style="color:var(--amber)">Cadastre em Configura\u00E7\u00F5es.</a>
-      </div>`:''}
-    </div>
-    <div id="fech-jobs-panel"></div>
-    <div id="fech-res"></div>`;
-  } else {
-    const cls=getClientes();
-    p.innerHTML=`<div class="card">
-      <div class="g2">
-        <div class="f"><label>Tipo</label>
-          <select id="nc-tipo"><option value="receber">A receber</option><option value="pagar">A pagar</option></select>
-        </div>
-        <div class="f"><label>Cliente / Fornecedor</label>
-          <input id="nc-cli" list="nc-cls-dl" placeholder="Nome">
-          <datalist id="nc-cls-dl">${cls.map(c=>`<option value="${c.nome}">`).join('')}</datalist>
-        </div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Valor (R$)</label><input type="number" id="nc-val" placeholder="0.00" step="0.01"></div>
-        <div class="f"><label>Vencimento</label><input type="date" id="nc-venc"></div>
-        <div class="f"><label>Forma pgto</label><select id="nc-pgto"><option>Pix</option><option>Transfer\u00EAncia</option><option>Boleto</option><option>Dinheiro</option></select></div>
-      </div>
-      <div class="f"><label>Refer\u00EAncia</label><input id="nc-ref" placeholder="Ex: Fechamento semanal, OS-042..."></div>
-      <button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarConta()">
-        <i class="ti ti-device-floppy"></i> Salvar conta
-      </button>
-    </div>`;
+    var tipo=t==='rec'?'receber':'pagar',fil=dados.filter(function(r){return r[2]===tipo;});
+    var rows='';fil.slice(0,40).forEach(function(r){var pg=r[8]==='pago'||r[8]==='recebido';var at=!pg&&r[4]&&r[4]<hoje;rows+='<tr><td>'+fmtData(r[1])+'</td><td><strong>'+(r[3]||'')+'</strong></td><td style="font-size:12px;color:var(--text2)">'+(r[6]||'')+'</td><td><strong>'+fmtR(r[5])+'</strong></td><td'+(at?' style="color:var(--red);font-weight:500"':'')+'>'+fmtData(r[4])+'</td><td><span class="badge '+(pg?'b-g':at?'b-r':'b-a')+'">'+(pg?'pago':at?'vencido':'pendente')+'</span></td><td>'+(!pg?'<button class="btn btn-xs btn-p" onclick="darBaixa(\''+r[0]+'\')">Baixa</button>':'')+'</td></tr>';});
+    if(!rows)rows='<tr><td colspan="7" style="text-align:center;color:var(--text3)">Nenhum registro.</td></tr>';
+    p.innerHTML='<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Cliente/Forn.</th><th>Referencia</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }else if(t==='fechamento'){
+    var cls=await getClientes(),contas=await getContas();
+    var cliOpts=cls.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('');
+    var ctOpts=contas.map(function(c,i){return '<option value="'+i+'">'+(c.tipo==='pix'?'Pix':'Transf.')+' - '+c.desc+' ('+c.chave+')</option>';}).join('');
+    var semConta=!contas.length?'<div class="alert alert-a" style="margin-top:8px"><i class="ti ti-alert-circle"></i> Nenhuma conta cadastrada. <a href="#" onclick="goNav(\'config\')" style="color:var(--amber)">Cadastre em Configuracoes.</a></div>':'';
+    p.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-calculator"></i>gerar fechamento</div>'
+      +'<div class="g3"><div class="f"><label>Cliente</label><select id="fech-cli" onchange="carregarJobsCliente()"><option value="">Selecione...</option>'+cliOpts+'</select></div>'
+      +'<div class="f"><label>De</label><input type="date" id="fech-de" onchange="carregarJobsCliente()"></div>'
+      +'<div class="f"><label>Ate</label><input type="date" id="fech-ate" value="'+today()+'" onchange="carregarJobsCliente()"></div></div>'
+      +'<div class="f"><label>Conta para recebimento</label><select id="fech-conta"><option value="">Selecione...</option>'+ctOpts+'</select></div>'
+      +semConta+'</div><div id="fech-jobs-panel"></div><div id="fech-res"></div>';
+  }else{
+    var cls2=await getClientes();var cliOpts2=cls2.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('');
+    p.innerHTML='<div class="card"><div class="g2"><div class="f"><label>Tipo</label><select id="nc-tipo"><option value="receber">A receber</option><option value="pagar">A pagar</option></select></div>'
+      +'<div class="f"><label>Cliente / Fornecedor</label><input id="nc-cli" list="nc-cls-dl" placeholder="Nome"><datalist id="nc-cls-dl">'+cliOpts2+'</datalist></div></div>'
+      +'<div class="g3"><div class="f"><label>Valor (R$)</label><input type="number" id="nc-val" placeholder="0.00" step="0.01"></div><div class="f"><label>Vencimento</label><input type="date" id="nc-venc"></div><div class="f"><label>Forma pgto</label><select id="nc-pgto"><option>Pix</option><option>Transferencia</option><option>Boleto</option><option>Dinheiro</option></select></div></div>'
+      +'<div class="f"><label>Referencia</label><input id="nc-ref" placeholder="Ex: Fechamento semanal, OS-042..."></div>'
+      +'<button class="btn btn-p btn-full" style="margin-top:4px" onclick="salvarConta()"><i class="ti ti-device-floppy"></i> Salvar conta</button></div>';
   }
 }
 
 async function darBaixa(ts){
-  // Buscar dados da conta
-  const rows = await apiGet('financeiro');
-  const conta = rows.slice(1).find(r=>r[0]===ts);
-  if(!conta){toast('Conta n\u00E3o encontrada');return;}
-  const valorTotal = parseFloat(conta[5])||0;
-  const cliente = conta[3]||'';
-
-  // Modal de baixa
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal" style="max-width:380px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Registrar pagamento</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px">
-      <p style="font-size:12px;color:var(--text2)">Cliente: <strong>${cliente}</strong></p>
-      <p style="font-size:12px;color:var(--text2)">Valor total: <strong style="font-size:15px">${fmtR(valorTotal)}</strong></p>
-    </div>
-    <div class="f">
-      <label>Tipo de pagamento</label>
-      <select id="baixa-tipo" onchange="toggleBaixaParcial()">
-        <option value="total">Pagamento total - ${fmtR(valorTotal)}</option>
-        <option value="parcial">Pagamento parcial</option>
-      </select>
-    </div>
-    <div class="f hidden" id="baixa-parcial-field">
-      <label>Valor pago (R$)</label>
-      <input type="number" id="baixa-valor" placeholder="0,00" min="0" step="0.01"
-        style="font-size:16px;font-weight:600" max="${valorTotal}">
-      <span style="font-size:11px;color:var(--text3);margin-top:2px">
-        Saldo restante ficar\u00E1 como devedor para o pr\u00F3ximo fechamento
-      </span>
-    </div>
-    <div class="f">
-      <label>Forma de pagamento</label>
-      <select id="baixa-pgto">
-        <option>Pix</option><option>Transfer\u00EAncia</option>
-        <option>Dinheiro</option><option>Boleto</option>
-      </select>
-    </div>
-    <div class="f">
-      <label>Observa\u00E7\u00E3o</label>
-      <input id="baixa-obs" placeholder="Opcional">
-    </div>
-    <button class="btn btn-p btn-full" style="margin-top:4px"
-      onclick="confirmarBaixa('${ts}','${cliente}',${valorTotal})">
-      <i class="ti ti-check"></i> Confirmar pagamento
-    </button>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+  var rows=await apiGet('financeiro');var conta=rows.slice(1).find(function(r){return r[0]===ts;});if(!conta){toast('Conta nao encontrada');return;}
+  var vT=parseFloat(conta[5])||0,cli=conta[3]||'';
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal" style="max-width:380px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">Registrar pagamento</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +'<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px"><p style="font-size:12px;color:var(--text2)">Cliente: <strong>'+cli+'</strong></p><p style="font-size:12px;color:var(--text2)">Valor total: <strong style="font-size:15px">'+fmtR(vT)+'</strong></p></div>'
+    +'<div class="f"><label>Tipo</label><select id="baixa-tipo" onchange="toggleBaixaParcial()"><option value="total">Pagamento total - '+fmtR(vT)+'</option><option value="parcial">Pagamento parcial</option></select></div>'
+    +'<div class="f hidden" id="baixa-parcial-field"><label>Valor pago (R$)</label><input type="number" id="baixa-valor" placeholder="0,00" min="0" step="0.01" style="font-size:16px;font-weight:600" max="'+vT+'"></div>'
+    +'<div class="f"><label>Forma de pagamento</label><select id="baixa-pgto"><option>Pix</option><option>Transferencia</option><option>Dinheiro</option><option>Boleto</option></select></div>'
+    +'<div class="f"><label>Observacao</label><input id="baixa-obs" placeholder="Opcional"></div>'
+    +'<button class="btn btn-p btn-full" style="margin-top:4px" onclick="confirmarBaixa(\''+ts+'\',\''+cli.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')+'\','+vT+')"><i class="ti ti-check"></i> Confirmar pagamento</button></div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
-function toggleBaixaParcial(){
-  const tipo=v('baixa-tipo');
-  const field=$('baixa-parcial-field');
-  if(field) field.classList.toggle('hidden', tipo!=='parcial');
+function toggleBaixaParcial(){var tipo=v('baixa-tipo');var f=$('baixa-parcial-field');if(f)f.classList.toggle('hidden',tipo!=='parcial');}
+
+async function confirmarBaixa(ts,cli,vT){
+  var tipo=v('baixa-tipo'),pgto=v('baixa-pgto'),obs=v('baixa-obs'),vP=vT;
+  if(tipo==='parcial'){vP=parseFloat(v('baixa-valor'))||0;if(!vP||vP<=0){toast('Informe o valor pago');return;}if(vP>vT){toast('Valor maior que o total');return;}}
+  var saldo=Math.round((vT-vP)*100)/100;
+  await apiPost('baixas',['timestamp_orig','data_baixa','status','valor_pago','saldo','forma_pgto','obs'],[ts,nowStr(),tipo==='total'?'pago_total':'pago_parcial',vP,saldo,pgto,obs]);
+  var cls=await getClientes();var idx=cls.findIndex(function(c){return c.nome===cli;});
+  if(idx>=0){if(!cls[idx].historicoPagamentos)cls[idx].historicoPagamentos=[];cls[idx].historicoPagamentos.push({data:new Date().toLocaleDateString('pt-BR'),valorPago:vP,saldoDepois:saldo>0?saldo:0,pgto:pgto,obs:obs});cls[idx].saldoDevedor=saldo>0?saldo:0;cls[idx].ultimaBaixa=new Date().toLocaleDateString('pt-BR');saveClientes(cls);syncCliente(cls[idx]);}
+  var mb=document.querySelector('.modal-bg');if(mb)mb.remove();delete _cache['financeiro'];
+  if(saldo>0){var cli2=idx>=0?cls[idx]:null;var pV=calcVencimento(cli2?cli2.ciclo:null,today());await apiPost('financeiro',['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],[nowStr(),today(),'receber',cli,pV,saldo,'Saldo devedor (pago '+fmtR(vP)+' de '+fmtR(vT)+')',pgto,'pendente','saldo devedor automatico']);renderFinanceiro();setTimeout(function(){abrirModalAtualizSaldo(cli,vP,saldo);},400);}
+  else{toast('Pagamento total registrado!');renderFinanceiro();}
 }
 
-async function confirmarBaixa(ts, cliente, valorTotal){
-  const tipo=v('baixa-tipo');
-  const pgto=v('baixa-pgto');
-  const obs=v('baixa-obs');
-  let valorPago=valorTotal;
+function abrirModalAtualizSaldo(cli,vP,saldo){
+  getContas().then(function(contas){
+    var ctOpts=contas.map(function(c,i){return '<option value="'+i+'">'+c.desc+' - '+c.chave+'</option>';}).join('');
+    var m=document.createElement('div');m.className='modal-bg';
+    m.innerHTML='<div class="modal" style="max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">Pagamento registrado!</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+      +'<div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:12px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--green)">Pagamento recebido:</span><strong style="color:var(--green)">'+fmtR(vP)+'</strong></div><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--amber)">Saldo devedor atual:</span><strong style="color:var(--amber)">'+fmtR(saldo)+'</strong></div></div>'
+      +'<p style="font-size:13px;color:var(--text2);margin-bottom:10px">Enviar atualizacao para <strong>'+cli+'</strong>?</p>'
+      +'<div class="f"><label>Conta Pix</label><select id="upd-conta"><option value="">Selecione...</option>'+ctOpts+'</select></div>'
+      +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" style="background:#25D366;color:#fff;border-color:#25D366;flex:1;justify-content:center" onclick="enviarAtualizSaldo(\''+cli.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')+'\','+vP+','+saldo+')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="flex:1;justify-content:center">Agora nao</button></div></div>';
+    m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
+  });
+}
 
-  if(tipo==='parcial'){
-    valorPago=parseFloat(v('baixa-valor'))||0;
-    if(!valorPago||valorPago<=0){toast('Informe o valor pago');return;}
-    if(valorPago>valorTotal){toast('Valor pago n\u00E3o pode ser maior que o total');return;}
-  }
-
-  const saldo=Math.round((valorTotal-valorPago)*100)/100;
-
-  // Registrar baixa
-  await apiPost('baixas',
-    ['timestamp_orig','data_baixa','status','valor_pago','saldo','forma_pgto','obs'],
-    [ts,nowStr(),tipo==='total'?'pago_total':'pago_parcial',valorPago,saldo,pgto,obs]);
-
-  // Atualizar saldo devedor no cliente
-  const cls=await getClientes();
-  const idx=cls.findIndex(c=>c.nome===cliente);
-  const cli=idx>=0?cls[idx]:null;
-
-  // Inicializar hist\u00F3rico de pagamentos se n\u00E3o existir
-  if(idx>=0){
-    if(!cls[idx].historicoPagamentos) cls[idx].historicoPagamentos=[];
-    cls[idx].historicoPagamentos.push({
-      data: new Date().toLocaleDateString('pt-BR'),
-      valorPago,
-      saldoAntes: parseFloat(cli?.saldoDevedor||0)+valorTotal,
-      saldoDepois: saldo>0 ? saldo : 0,
-      pgto,
-      obs,
-      ts_conta: ts
+function enviarAtualizSaldo(cli,vP,saldo){
+  var ctIdx=v('upd-conta');
+  getContas().then(function(contas){
+    var conta=ctIdx!==''?contas[parseInt(ctIdx)]:null;
+    getClientes().then(function(cls){
+      var c=cls.find(function(x){return x.nome===cli;});
+      var NL='%0A';var p=['*Atualizacao de saldo - DTF Pro*','Cliente: '+cli,'Data: '+new Date().toLocaleDateString('pt-BR'),'','Pagamento recebido: '+fmtR(vP),'Saldo devedor atual: '+fmtR(saldo)];
+      if(conta){p.push('');p.push('Para quitacao:');p.push('Pix: '+conta.chave);if(conta.fav)p.push('Favorecido: '+conta.fav);}
+      p.push('');p.push('DTF Pro - Sistema de Gestao');
+      var msg=p.join(NL);var tel=c&&c.tel?c.tel.replace(/[^0-9]/g,''):'';
+      var url=tel?'https://wa.me/55'+tel+'?text='+msg:'https://wa.me/?text='+msg;
+      window.open(url,'_blank');var mb=document.querySelector('.modal-bg');if(mb)mb.remove();toast('WhatsApp aberto!');
     });
-    cls[idx].saldoDevedor = saldo>0 ? saldo : 0;
-    cls[idx].ultimaBaixa = new Date().toLocaleDateString('pt-BR');
-    saveClientes(cls);
-  }
-
-  // Se parcial - criar nova conta com o saldo devedor
-  if(saldo>0){
-    const proxVenc=calcVencimento(cli?.ciclo,today());
-    await apiPost('financeiro',
-      ['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],
-      [nowStr(),today(),'receber',cliente,proxVenc,saldo,
-       `Saldo devedor (pago ${fmtR(valorPago)} de ${fmtR(valorTotal)})`,
-       pgto,'pendente','saldo devedor autom\u00E1tico']);
-
-    // Perguntar se quer enviar WhatsApp de atualiza\u00E7\u00E3o
-    document.querySelector('.modal-bg')?.remove();
-    delete _cache['financeiro'];
-    renderFinanceiro();
-
-    setTimeout(()=>{
-      abrirModalAtualizacaoSaldo(cliente, valorPago, saldo);
-    }, 400);
-
-  } else {
-    document.querySelector('.modal-bg')?.remove();
-    delete _cache['financeiro'];
-    toast('Pagamento total registrado! OK');
-    renderFinanceiro();
-  }
+  });
 }
 
-function abrirModalAtualizacaoSaldo(cliente, valorPago, saldoAtual){
-  const cli=getClientes().find(c=>c.nome===cliente);
-  const contas=getContas();
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal" style="max-width:400px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Pagamento registrado!</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-
-    <div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:12px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:12px;color:var(--green)">Pagamento recebido:</span>
-        <strong style="color:var(--green)">${fmtR(valorPago)}</strong>
-      </div>
-      <div style="display:flex;justify-content:space-between">
-        <span style="font-size:12px;color:var(--amber)">Saldo devedor atual:</span>
-        <strong style="color:var(--amber)">${fmtR(saldoAtual)}</strong>
-      </div>
-    </div>
-
-    <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
-      Deseja enviar uma mensagem de atualiza\u00E7\u00E3o de saldo para <strong>${cliente}</strong>?
-    </p>
-
-    <div class="f">
-      <label>Conta Pix para pagamento do saldo</label>
-      <select id="upd-conta">
-        <option value="">Selecione...</option>
-        ${contas.map((c,i)=>`<option value="${i}">${c.desc} - ${c.chave}</option>`).join('')}
-      </select>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366;flex:1;justify-content:center"
-        onclick="enviarAtualizacaoSaldo('${cliente}',${valorPago},${saldoAtual})">
-        <i class="ti ti-brand-whatsapp"></i> Enviar no WhatsApp
-      </button>
-      <button class="btn" onclick="this.closest('.modal-bg').remove()" style="flex:1;justify-content:center">
-        Agora n\u00E3o
-      </button>
-    </div>
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
+async function verHistPag(nomeCliente){
+  var cls=await getClientes();var cli=cls.find(function(c){return c.nome===nomeCliente;});if(!cli){toast('Cliente nao encontrado');return;}
+  var hist=cli.historicoPagamentos||[];var rows='';
+  hist.slice().reverse().forEach(function(h){rows+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;font-size:13px"><div><p style="font-weight:500">'+fmtR(h.valorPago)+' <span style="font-size:11px;color:var(--text3)">'+(h.pgto||'')+'</span></p><p style="font-size:11px;color:var(--text2)">'+h.data+' - saldo apos: '+fmtR(h.saldoDepois)+'</p>'+(h.obs?'<p style="font-size:11px;color:var(--text3)">'+h.obs+'</p>':'')+'</div><span class="badge '+(h.saldoDepois>0?'b-a':'b-g')+'">'+(h.saldoDepois>0?'parcial':'quitado')+'</span></div>';});
+  if(!rows)rows='<p style="font-size:13px;color:var(--text3);text-align:center;padding:1rem">Nenhum pagamento registrado</p>';
+  var saldoH=cli.saldoDevedor>0?'<div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:500;color:var(--amber)">Saldo devedor atual</span><strong style="font-size:18px;color:var(--amber)">'+fmtR(cli.saldoDevedor)+'</strong></div>':'';
+  var m=document.createElement('div');m.className='modal-bg';
+  m.innerHTML='<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><p style="font-size:16px;font-weight:600">Historico - '+nomeCliente+'</p><button onclick="this.closest(\'.modal-bg\').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">x</button></div>'
+    +saldoH+rows
+    +(cli.saldoDevedor>0?'<button class="btn btn-p btn-full" style="margin-top:10px" onclick="this.closest(\'.modal-bg\').remove();abrirModalAtualizSaldo(\''+nomeCliente.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')+'\',0,'+cli.saldoDevedor+')"><i class="ti ti-brand-whatsapp"></i> Enviar lembrete</button>':'')+'</div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});document.body.appendChild(m);
 }
 
-function enviarAtualizacaoSaldo(cliente, valorPago, saldoAtual){
-  var contaIdx=v('upd-conta');
-  var contas=getContas();
-  var conta=contaIdx!==''?contas[parseInt(contaIdx)]:null;
-  var cli=getClientes().find(function(c){return c.nome===cliente;});
-  var NL='%0A';
-  var partes=['*Atualizacao de saldo - DTF Pro*','Cliente: '+cliente,'Data: '+new Date().toLocaleDateString('pt-BR'),'','Pagamento recebido: '+fmtR(valorPago),'Saldo devedor atual: '+fmtR(saldoAtual)];
-  if(conta){partes.push('');partes.push('Para quitacao:');partes.push('Pix: '+conta.chave);if(conta.fav)partes.push('Favorecido: '+conta.fav);}
-  partes.push('');partes.push('DTF Pro - Sistema de Gestao');
-  var msg=partes.join(NL);
-  var tel=cli&&cli.tel?cli.tel.replace(/[^0-9]/g,''):'';
-  var url=tel?'https://wa.me/55'+tel+'?text='+msg:'https://wa.me/?text='+msg;
-  window.open(url,'_blank');
-  var mb=document.querySelector('.modal-bg');if(mb)mb.remove();
-  toast('Mensagem aberta no WhatsApp!');
-}
+async function salvarConta(){var cli=v('nc-cli').trim(),val=parseFloat(v('nc-val'))||0;if(!cli){toast('Informe o cliente/fornecedor');return;}if(!val){toast('Informe o valor');return;}await apiPost('financeiro',['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],[nowStr(),today(),v('nc-tipo'),cli,v('nc-venc'),val,v('nc-ref'),v('nc-pgto'),'pendente','']);toast('Conta salva!');delete _cache['financeiro'];renderFinanceiro();}
+function calcVencimento(ciclo,dataRef){var d=new Date(dataRef||today());if(ciclo==='semanal'){var df=(5-d.getDay()+7)%7||7;d.setDate(d.getDate()+df);}else if(ciclo==='quinzenal'){d.setDate(d.getDate()<=15?15:new Date(d.getFullYear(),d.getMonth()+1,0).getDate());}else if(ciclo==='mensal'){d.setDate(new Date(d.getFullYear(),d.getMonth()+1,0).getDate());}else{d.setDate(d.getDate()+7);}return d.toISOString().split('T')[0];}
 
-async function verHistoricoPagamentos(nomeCliente){
-  const cls=await getClientes();
-  const cli=cls.find(c=>c.nome===nomeCliente);
-  if(!cli){toast('Cliente n\u00E3o encontrado');return;}
-  const hist=cli.historicoPagamentos||[];
-  const m=document.createElement('div');
-  m.className='modal-bg';
-  m.innerHTML=`<div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <p style="font-size:16px;font-weight:600">Hist\u00F3rico de pagamentos - ${nomeCliente}</p>
-      <button onclick="this.closest('.modal-bg').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2)">\u00D7</button>
-    </div>
-    ${cli.saldoDevedor>0?`
-    <div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;font-weight:500;color:var(--amber)">Saldo devedor atual</span>
-      <strong style="font-size:18px;color:var(--amber)">${fmtR(cli.saldoDevedor)}</strong>
-    </div>`:'<div class="alert alert-g"><i class="ti ti-check"></i> Sem saldo devedor</div>'}
-    ${hist.length?`
-    <p style="font-size:12px;font-weight:500;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Pagamentos registrados</p>
-    ${hist.slice().reverse().map(h=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;font-size:13px">
-        <div>
-          <p style="font-weight:500">${fmtR(h.valorPago)} <span style="font-size:11px;color:var(--text3)">${h.pgto||''}</span></p>
-          <p style="font-size:11px;color:var(--text2)">${h.data} . saldo ap\u00F3s: ${fmtR(h.saldoDepois)}</p>
-          ${h.obs?`<p style="font-size:11px;color:var(--text3)">${h.obs}</p>`:''}
-        </div>
-        <span class="badge ${h.saldoDepois>0?'b-a':'b-g'}">${h.saldoDepois>0?'parcial':'quitado'}</span>
-      </div>`).join('')}`
-    :'<p style="font-size:13px;color:var(--text3);text-align:center;padding:1rem">Nenhum pagamento registrado</p>'}
-    ${cli.saldoDevedor>0?`
-    <button class="btn btn-p btn-full" style="margin-top:10px"
-      onclick="this.closest('.modal-bg').remove();abrirModalAtualizacaoSaldo('${nomeCliente}',0,${cli.saldoDevedor})">
-      <i class="ti ti-brand-whatsapp"></i> Enviar lembrete de saldo
-    </button>`:''}
-  </div>`;
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
-  document.body.appendChild(m);
-}
-
-async function salvarConta(){
-  const cli=v('nc-cli').trim(),val=parseFloat(v('nc-val'))||0;
-  if(!cli){toast('Informe o cliente/fornecedor');return;}
-  if(!val){toast('Informe o valor');return;}
-  await apiPost('financeiro',
-    ['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],
-    [nowStr(),today(),v('nc-tipo'),cli,v('nc-venc'),val,v('nc-ref'),v('nc-pgto'),'pendente','']);
-  toast('Conta salva!');delete _cache['financeiro'];renderFinanceiro();
-}
-
-// Contas banc\u00E1rias
-let _contasCache=null;
-
-async function getContas(){
-  if(_contasCache) return _contasCache;
-  const local=store.get('dtf_contas');
-  if(local&&local.length){_contasCache=local;return _contasCache;}
-  try{
-    const rows=await apiGet('contas',false);
-    if(rows.length>1){
-      _contasCache=rows.slice(1).filter(r=>r[0]).map(r=>({
-        id:r[0],tipo:r[1]||'pix',desc:r[2]||'',chave:r[3]||'',fav:r[4]||'',
-      }));
-      store.set('dtf_contas',_contasCache);
-      return _contasCache;
-    }
-  }catch(e){}
-  return [];
-}
-
-function saveContas(contas){
-  _contasCache=contas;
-  store.set('dtf_contas',contas);
-}
-
-async function syncConta(c){
-  await apiPost('contas',
-    ['id','tipo','desc','chave','fav'],
-    [c.id,c.tipo,c.desc,c.chave,c.fav||'']);
-  delete _cache['contas'];
-  _contasCache=null;
-}
-
-async function addConta(){
-  const tipo=v('cc-tipo'),desc=v('cc-desc').trim(),chave=v('cc-chave').trim(),fav=v('cc-fav').trim();
-  if(!desc||!chave){toast('Preencha descri\u00E7\u00E3o e chave/dados');return;}
-  const contas=await getContas();
-  const nova={id:Date.now(),tipo,desc,chave,fav};
-  contas.push(nova);
-  saveContas(contas);
-  syncConta(nova);
-  toast('Conta adicionada!');
-  renderListaContas();
-  ['cc-desc','cc-chave','cc-fav'].forEach(id=>{const el=$(id);if(el)el.value='';});
-}
-
-async function renderListaContas(){
-  const el=$('lista-contas-config');if(!el) return;
-  const contas=await getContas();
-  if(!contas.length){el.innerHTML='<p style="font-size:12px;color:var(--text3)">Nenhuma conta cadastrada.</p>';return;}
-  const icons={pix:'ti-brand-telegram',transferencia:'ti-building-bank',dinheiro:'ti-cash'};
-  el.innerHTML=contas.map((c,i)=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <i class="ti ${icons[c.tipo]||'ti-wallet'}" style="font-size:18px;color:var(--green)"></i>
-        <div>
-          <p style="font-size:13px;font-weight:500">${c.desc}</p>
-          <p style="font-size:12px;color:var(--text2)">${c.chave}${c.fav?' . '+c.fav:''}</p>
-        </div>
-      </div>
-      <button class="btn btn-xs btn-r" onclick="remConta(${i})"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
-}
-
-async function remConta(i){
-  if(!confirm('Remover esta conta?')) return;
-  const contas=await getContas();contas.splice(i,1);saveContas(contas);
-  _contasCache=null;delete _cache['contas'];
-  toast('Conta removida');renderListaContas();
-}
-
-// Jobs pendentes por cliente
-let _jobsFechamento=[];
-
+var _jobsFech=[];
 async function carregarJobsCliente(){
-  const cliNome=v('fech-cli'),de=v('fech-de'),ate=v('fech-ate');
-  const el=$('fech-jobs-panel');
-  if(!el) return;
-  if(!cliNome){el.innerHTML='';return;}
+  var cliNome=v('fech-cli'),de=v('fech-de'),ate=v('fech-ate'),el=$('fech-jobs-panel');
+  if(!el)return;if(!cliNome){el.innerHTML='';return;}
   el.innerHTML='<div class="loading"><span class="spin spin-dark"></span> Carregando jobs...</div>';
-
-  const pedRows=await apiGet('pedidos');
-  _jobsFechamento=pedRows.slice(1).filter(r=>{
-    const match=(r[3]||'').toLowerCase()===cliNome.toLowerCase();
-    const inDate=(!de||r[1]>=de)&&(!ate||r[1]<=ate);
-    const naoCobrado=(r[9]||'')!=='Faturado';
-    return match&&inDate&&naoCobrado;
+  var pedRows=await apiGet('pedidos');var norm=cliNome.toLowerCase();
+  _jobsFech=pedRows.slice(1).filter(function(r){var match=(r[3]||'').toLowerCase()===norm;var inDate=(!de||r[1]>=de)&&(!ate||r[1]<=ate);return match&&inDate&&(r[9]||'')!=='Faturado';});
+  _jobsFech.forEach(function(r,i){r._idx=i;r._sel=true;});
+  if(!_jobsFech.length){el.innerHTML='<div class="alert alert-a"><i class="ti ti-info-circle"></i>Nenhum job encontrado no periodo.</div>';return;}
+  var porDia={};_jobsFech.forEach(function(r){var dia=r[1]||'Sem data';if(!porDia[dia])porDia[dia]=[];porDia[dia].push(r);});
+  var diasH='';Object.keys(porDia).sort().forEach(function(dia){
+    var jobs=porDia[dia];var jH='';jobs.forEach(function(r){jH+='<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px" id="fech-row-'+r._idx+'"><input type="checkbox" checked onchange="toggleJobFech('+r._idx+',this.checked)"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r[10]||r[3]||'-')+'</span><span style="color:var(--text2);white-space:nowrap">'+fmt(r[5])+'m</span><span style="font-weight:500;white-space:nowrap;min-width:80px;text-align:right">'+fmtR(r[7])+'</span></div>';});
+    diasH+='<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px"><i class="ti ti-calendar" style="font-size:14px;color:var(--text2)"></i><span style="font-size:12px;font-weight:500">'+fmtData(dia)+'</span><span style="font-size:11px;color:var(--text3)">'+jobs.length+' job(s)</span></div>'+jH+'</div>';
   });
-
-  if(!_jobsFechamento.length){
-    el.innerHTML='<div class="alert alert-a"><i class="ti ti-info-circle"></i>Nenhum job encontrado para este cliente no per\u00EDodo.</div>';
-    return;
-  }
-
-  // Agrupar por dia
-  const porDia={};
-  _jobsFechamento.forEach((r,idx)=>{
-    const dia=r[1]||'Sem data';
-    if(!porDia[dia]) porDia[dia]=[];
-    porDia[dia].push({...r, _idx:idx, _sel:true});
-  });
-
-  el.innerHTML=`<div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:0"><i class="ti ti-list-check"></i>selecionar jobs para cobran\u00E7a</div>
-      <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="sel-todos-fech" checked onchange="toggleTodosFech(this.checked)">
-        Selecionar todos (${_jobsFechamento.length})
-      </label>
-    </div>
-    ${Object.entries(porDia).sort((a,b)=>a[0]>b[0]?1:-1).map(([dia,jobs])=>`
-      <div style="margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px">
-          <i class="ti ti-calendar" style="font-size:14px;color:var(--text2)"></i>
-          <span style="font-size:12px;font-weight:500">${dia}</span>
-          <span style="font-size:11px;color:var(--text3)">${jobs.length} job(s)</span>
-        </div>
-        ${jobs.map(r=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px" id="fech-row-${r._idx}">
-            <input type="checkbox" checked onchange="toggleJobFech(${r._idx},this.checked)" style="flex-shrink:0">
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[10]||r[3]||''}">${r[10]||r[3]||'-'}</span>
-            <span style="color:var(--text2);white-space:nowrap">${fmt(r[5])} m</span>
-            <span style="font-weight:500;white-space:nowrap;min-width:80px;text-align:right">${fmtR(r[7])}</span>
-          </div>`).join('')}
-      </div>`).join('')}
-    <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px" id="fech-totais">
-    </div>
-    <button class="btn btn-p btn-full" style="margin-top:10px" onclick="confirmarFechamento()">
-      <i class="ti ti-file-invoice"></i> Gerar documento de cobran\u00E7a
-    </button>
-  </div>`;
-
+  el.innerHTML='<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="card-title" style="margin-bottom:0"><i class="ti ti-list-check"></i>selecionar jobs</div><label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sel-todos-fech" checked onchange="toggleTodosFech(this.checked)">Todos ('+_jobsFech.length+')</label></div>'
+    +diasH+'<div style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px" id="fech-totais"></div>'
+    +'<button class="btn btn-p btn-full" style="margin-top:10px" onclick="confirmarFechamento()"><i class="ti ti-file-invoice"></i> Gerar documento de cobranca</button></div>';
   atualizarTotaisFech();
 }
 
-function toggleJobFech(idx,sel){
-  if(_jobsFechamento[idx]) _jobsFechamento[idx]._sel=sel;
-  const row=$('fech-row-'+idx);
-  if(row) row.style.opacity=sel?'1':'0.4';
-  atualizarTotaisFech();
-}
+function toggleJobFech(idx,sel){if(_jobsFech[idx])_jobsFech[idx]._sel=sel;var row=$('fech-row-'+idx);if(row)row.style.opacity=sel?'1':'0.4';atualizarTotaisFech();}
+function toggleTodosFech(sel){_jobsFech.forEach(function(r,i){r._sel=sel;var row=$('fech-row-'+i);if(row)row.style.opacity=sel?'1':'0.4';});atualizarTotaisFech();}
+function atualizarTotaisFech(){var sel=_jobsFech.filter(function(r){return r._sel;});var totM=sel.reduce(function(s,r){return s+(parseFloat(r[5])||0);},0);var totV=sel.reduce(function(s,r){return s+(parseFloat(r[7])||0);},0);var el=$('fech-totais');if(!el)return;el.innerHTML='<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Jobs selecionados:</span><strong>'+sel.length+' de '+_jobsFech.length+'</strong></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Metragem total:</span><strong>'+fmt(totM)+'m</strong></div><div style="display:flex;justify-content:space-between;font-size:16px"><span style="font-weight:500">Total a cobrar:</span><strong style="color:var(--green);font-size:18px">'+fmtR(totV)+'</strong></div>';}
 
-function toggleTodosFech(sel){
-  _jobsFechamento.forEach((r,i)=>{r._sel=sel;const row=$('fech-row-'+i);if(row)row.style.opacity=sel?'1':'0.4';});
-  atualizarTotaisFech();
-}
-
-function atualizarTotaisFech(){
-  const sel=_jobsFechamento.filter(r=>r._sel);
-  const totM=sel.reduce((s,r)=>s+(parseFloat(r[5])||0),0);
-  const totV=sel.reduce((s,r)=>s+(parseFloat(r[7])||0),0);
-  const el=$('fech-totais');
-  if(!el) return;
-  el.innerHTML=`
-    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-      <span style="color:var(--text2)">Jobs selecionados:</span><strong>${sel.length} de ${_jobsFechamento.length}</strong>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-      <span style="color:var(--text2)">Metragem total:</span><strong>${fmt(totM)} m</strong>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:16px">
-      <span style="font-weight:500">Total a cobrar:</span>
-      <strong style="color:var(--green);font-size:18px">${fmtR(totV)}</strong>
-    </div>`;
-}
-
-function confirmarFechamento(){
-  const cliNome=v('fech-cli');
-  const contaIdx=v('fech-conta');
-  const sel=_jobsFechamento.filter(r=>r._sel);
-  if(!sel.length){toast('Selecione ao menos um job');return;}
-  if(contaIdx===''){toast('Selecione a conta para recebimento');return;}
-
-  const cli=getClientes().find(c=>c.nome===cliNome);
-  const contas=getContas();
-  const conta=contas[parseInt(contaIdx)];
-  const totM=sel.reduce((s,r)=>s+(parseFloat(r[5])||0),0);
-  const totServicos=sel.reduce((s,r)=>s+(parseFloat(r[7])||0),0);
-  const saldoDevedor=parseFloat(cli?.saldoDevedor||0);
-  const totV=totServicos+saldoDevedor;
-  const de=v('fech-de'),ate=v('fech-ate')||today();
-
-  // Calcular vencimento pelo ciclo do cliente
-  const venc=calcVencimento(cli?.ciclo,ate);
-
-  const el=$('fech-res');if(!el) return;
-
-  // Agrupar por dia para o documento
-  const porDia={};
-  sel.forEach(r=>{
-    const dia=r[1]||'';
-    if(!porDia[dia]) porDia[dia]=[];
-    porDia[dia].push(r);
-  });
-
-  el.innerHTML=`
-    <div class="card" id="doc-fechamento" style="margin-top:0">
-      <!-- Cabe\u00E7alho do documento -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)">
-        <div>
-          <p style="font-size:20px;font-weight:700">DTF Pro</p>
-          <p style="font-size:12px;color:var(--text2)">Documento de Cobran\u00E7a</p>
-        </div>
-        <div style="text-align:right">
-          <p style="font-size:12px;color:var(--text2)">Emitido em ${new Date().toLocaleDateString('pt-BR')}</p>
-          <p style="font-size:12px;color:var(--text2)">Vencimento: <strong>${venc}</strong></p>
-        </div>
-      </div>
-
-      <!-- Cliente -->
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px">
-        <p style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Cliente</p>
-        <p style="font-size:15px;font-weight:600">${cliNome}</p>
-        <p style="font-size:12px;color:var(--text2)">${de?de+' a ':''} ${ate} . ${cli?.ciclo||'avulso'}</p>
-      </div>
-
-      <!-- Saldo devedor anterior (se houver) -->
-      ${saldoDevedor>0?`
-      <div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <p style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase">! Saldo devedor anterior</p>
-            <p style="font-size:12px;color:var(--amber)">Valor em aberto do fechamento anterior</p>
-          </div>
-          <p style="font-size:16px;font-weight:700;color:var(--amber)">${fmtR(saldoDevedor)}</p>
-        </div>
-      </div>`:''}
-
-      <!-- Jobs por dia -->
-      ${Object.entries(porDia).sort((a,b)=>a[0]>b[0]?1:-1).map(([dia,jobs])=>`
-        <div style="margin-bottom:10px">
-          <p style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px">
-            <i class="ti ti-calendar" style="font-size:12px"></i> ${dia}
-          </p>
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
-            ${jobs.map(r=>`<tr>
-              <td style="padding:5px 0;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">${r[10]||r[3]||'-'}</td>
-              <td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;color:var(--text2)">${fmt(r[5])} m</td>
-              <td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-weight:500;padding-left:12px">${fmtR(r[7])}</td>
-            </tr>`).join('')}
-          </table>
-        </div>`).join('')}
-
-      <!-- Totais -->
-      <div style="border-top:2px solid var(--border);padding-top:12px;margin-top:4px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-          <span style="color:var(--text2)">Total metragem:</span><strong>${fmt(totM)} m</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-          <span style="color:var(--text2)">Subtotal servi\u00E7os:</span><strong>${fmtR(totServicos)}</strong>
-        </div>
-        ${saldoDevedor>0?`
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--amber)">
-          <span>+ Saldo devedor anterior:</span><strong>${fmtR(saldoDevedor)}</strong>
-        </div>
-        <div style="height:1px;background:var(--border);margin-bottom:6px"></div>`:''}
-        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;color:var(--green)">
-          <span>TOTAL GERAL:</span><span>${fmtR(totV)}</span>
-        </div>
-      </div>
-
-      <!-- Dados para pagamento -->
-      ${conta?`<div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 14px;margin-top:14px">
-        <p style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:4px">Dados para pagamento</p>
-        <p style="font-size:13px;font-weight:500">${conta.tipo==='pix'?'Pix':'Transfer\u00EAncia Banc\u00E1ria'} - ${conta.desc}</p>
-        <p style="font-size:14px;font-weight:700;color:var(--green)">${conta.chave}</p>
-        ${conta.fav?`<p style="font-size:12px;color:var(--green)">Favorecido: ${conta.fav}</p>`:''}
-      </div>`:''}
-    </div>
-
-    <!-- Bot\u00F5es de a\u00E7\u00E3o -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
-      <button class="btn btn-p" onclick="imprimirFech()" style="justify-content:center">
-        <i class="ti ti-printer"></i> Imprimir
-      </button>
-      <button class="btn btn-b" onclick="salvarPDFFech('${cliNome}')" style="justify-content:center">
-        <i class="ti ti-file-type-pdf"></i> Salvar PDF
-      </button>
-      <button class="btn" onclick="enviarWhatsApp('${cliNome}',${totM},${totV},'${venc}','${conta?conta.chave:''}')" 
-        style="justify-content:center;background:#25D366;color:#fff;border-color:#25D366">
-        <i class="ti ti-brand-whatsapp"></i> WhatsApp
-      </button>
-    </div>
-    <button class="btn btn-p btn-full" style="margin-top:8px" 
-      onclick="lancarContaReceber('${cliNome}',${totV},'${venc}','${conta?conta.desc:''}')">
-      <i class="ti ti-currency-dollar"></i> Lan\u00E7ar no financeiro como conta a receber
-    </button>`;
-}
-
-function calcVencimento(ciclo, dataRef){
-  const d = new Date(dataRef || today());
-  if(ciclo==='semanal'){
-    // Pr\u00F3xima sexta
-    const diff = (5 - d.getDay() + 7) % 7 || 7;
-    d.setDate(d.getDate() + diff);
-  } else if(ciclo==='quinzenal'){
-    d.setDate(d.getDate() <= 15 ? 15 : new Date(d.getFullYear(), d.getMonth()+1, 0).getDate());
-  } else if(ciclo==='mensal'){
-    d.setDate(new Date(d.getFullYear(), d.getMonth()+1, 0).getDate());
-  } else {
-    d.setDate(d.getDate() + 7);
-  }
-  return d.toISOString().split('T')[0];
-}
-
-function imprimirFech(){window.print();}
-
-function salvarPDFFech(nome){
-  const el=$('doc-fechamento');
-  if(!el){toast('Gere o fechamento primeiro');return;}
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Cobran\u00E7a ${nome}</title>
-  <style>
-    body{font-family:Arial,sans-serif;font-size:13px;padding:2rem;max-width:600px;margin:0 auto}
-    table{width:100%;border-collapse:collapse}
-    td{padding:5px 0;border-bottom:1px solid #eee;font-size:13px}
-    .total{font-size:18px;font-weight:700;color:#2D6A2D}
-    .pix-box{background:#EAF3EA;border:1px solid #4A9E4A;border-radius:8px;padding:10px;margin-top:14px}
-  </style>
-  </head><body>${el.innerHTML}</body></html>`;
-  const blob=new Blob([html],{type:'text/html'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`cobranca_${nome.replace(/ /g,'_')}_${today()}.html`;
-  a.click();
-  toast('Arquivo salvo! Abra no navegador e use Imprimir > Salvar como PDF');
-}
-
-function enviarWhatsApp(nome, totM, totV, venc, chavePix){
-  var sel=_jobsFechamento.filter(function(r){return r._sel;});
-  var porDia={};
-  sel.forEach(function(r){var d=r[1]||'';if(!porDia[d])porDia[d]=[];porDia[d].push(r);});
-  var cli=getClientes().find(function(c){return c.nome===nome;});
-  var saldoDev=parseFloat(cli&&cli.saldoDevedor||0);
+async function confirmarFechamento(){
+  var cliNome=v('fech-cli'),ctIdx=v('fech-conta'),sel=_jobsFech.filter(function(r){return r._sel;});
+  if(!sel.length){toast('Selecione ao menos um job');return;}if(ctIdx===''){toast('Selecione a conta');return;}
+  var cls=await getClientes(),contas=await getContas();
+  var cli=cls.find(function(c){return c.nome===cliNome;}),conta=contas[parseInt(ctIdx)];
   var totSvc=sel.reduce(function(s,r){return s+(parseFloat(r[7])||0);},0);
-  var NL='%0A';
-  var p=['*Cobranca DTF Pro*','Cliente: '+nome,'Emitido: '+new Date().toLocaleDateString('pt-BR'),'Vencimento: '+venc];
+  var saldoDev=parseFloat(cli&&cli.saldoDevedor||0);var totV=totSvc+saldoDev;
+  var totM=sel.reduce(function(s,r){return s+(parseFloat(r[5])||0);},0);
+  var de=v('fech-de'),ate=v('fech-ate')||today();var venc=calcVencimento(cli&&cli.ciclo,ate);
+  var porDia={};sel.forEach(function(r){var d=r[1]||'';if(!porDia[d])porDia[d]=[];porDia[d].push(r);});
+  var saldoH='';if(saldoDev>0)saldoH='<div style="background:var(--amber-bg);border:1px solid #ffd97a;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase">Saldo devedor anterior</p></div><p style="font-size:16px;font-weight:700;color:var(--amber)">'+fmtR(saldoDev)+'</p></div></div>';
+  var jobsH='';Object.keys(porDia).sort().forEach(function(dia){var jobs=porDia[dia];var jR=jobs.map(function(r){return '<tr><td style="padding:5px 0;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">'+(r[10]||r[3]||'-')+'</td><td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;color:var(--text2)">'+fmt(r[5])+'m</td><td style="padding:5px 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-weight:500;padding-left:12px">'+fmtR(r[7])+'</td></tr>';}).join('');jobsH+='<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px"><i class="ti ti-calendar" style="font-size:12px"></i> '+fmtData(dia)+'</p><table style="width:100%;border-collapse:collapse;font-size:13px">'+jR+'</table></div>';});
+  var totH='<div style="border-top:2px solid var(--border);padding-top:12px;margin-top:4px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Total metragem:</span><strong>'+fmt(totM)+'m</strong></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Subtotal servicos:</span><strong>'+fmtR(totSvc)+'</strong></div>'+(saldoDev>0?'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--amber)"><span>+ Saldo devedor anterior:</span><strong>'+fmtR(saldoDev)+'</strong></div><div style="height:1px;background:var(--border);margin-bottom:6px"></div>':'')+'<div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;color:var(--green)"><span>TOTAL GERAL:</span><span>'+fmtR(totV)+'</span></div></div>';
+  var pixH=conta?'<div style="background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 14px;margin-top:14px"><p style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:4px">Dados para pagamento</p><p style="font-size:13px;font-weight:500">'+(conta.tipo==='pix'?'Pix':'Transferencia')+' - '+conta.desc+'</p><p style="font-size:14px;font-weight:700;color:var(--green)">'+conta.chave+'</p>'+(conta.fav?'<p style="font-size:12px;color:var(--green)">Favorecido: '+conta.fav+'</p>':'')+'</div>':'';
+  var el=$('fech-res');if(!el)return;
+  var cliSafe=cliNome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");var ctChave=conta?conta.chave.replace(/\\/g,'\\\\').replace(/'/g,"\\'"):'';var ctDesc=conta?conta.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'"):'';
+  el.innerHTML='<div class="card" id="doc-fechamento" style="margin-top:0">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)"><div><p style="font-size:20px;font-weight:700">DTF Pro</p><p style="font-size:12px;color:var(--text2)">Documento de Cobranca</p></div><div style="text-align:right"><p style="font-size:12px;color:var(--text2)">Emitido em '+new Date().toLocaleDateString('pt-BR')+'</p><p style="font-size:12px;color:var(--text2)">Vencimento: <strong>'+fmtData(venc)+'</strong></p></div></div>'
+    +'<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px"><p style="font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Cliente</p><p style="font-size:15px;font-weight:600">'+cliNome+'</p><p style="font-size:12px;color:var(--text2)">'+(de?fmtData(de)+' a ':'')+fmtData(ate)+' - '+(cli&&cli.ciclo||'avulso')+'</p></div>'
+    +saldoH+jobsH+totH+pixH+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">'
+    +'<button class="btn btn-p" onclick="window.print()" style="justify-content:center"><i class="ti ti-printer"></i> Imprimir</button>'
+    +'<button class="btn btn-b" onclick="salvarHTMLFech(\''+cliSafe+'\')" style="justify-content:center"><i class="ti ti-file-type-pdf"></i> Salvar PDF</button>'
+    +'<button class="btn" onclick="enviarWAFech(\''+cliSafe+'\','+totM+','+totV+',\''+venc+'\',\''+ctChave+'\','+saldoDev+')" style="justify-content:center;background:#25D366;color:#fff;border-color:#25D366"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button></div>'
+    +'<button class="btn btn-p btn-full" style="margin-top:8px" onclick="lancarCtaReceber(\''+cliSafe+'\','+totV+',\''+venc+'\',\''+ctDesc+'\','+saldoDev+')"><i class="ti ti-currency-dollar"></i> Lancar no financeiro</button>';
+}
+
+function salvarHTMLFech(nome){var el=$('doc-fechamento');if(!el){toast('Gere o fechamento primeiro');return;}var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cobranca '+nome+'</title><style>body{font-family:Arial,sans-serif;font-size:13px;padding:2rem;max-width:600px;margin:0 auto}table{width:100%;border-collapse:collapse}td{padding:5px 0;border-bottom:1px solid #eee}</style></head><body>'+el.innerHTML+'</body></html>';var b=new Blob([html],{type:'text/html'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cobranca_'+nome.replace(/ /g,'_')+'_'+today()+'.html';a.click();toast('Arquivo salvo! Abra no navegador e imprima como PDF');}
+
+function enviarWAFech(nome,totM,totV,venc,chavePix,saldoDev){
+  var sel=_jobsFech.filter(function(r){return r._sel;});var porDia={};sel.forEach(function(r){var d=r[1]||'';if(!porDia[d])porDia[d]=[];porDia[d].push(r);});
+  var totSvc=sel.reduce(function(s,r){return s+(parseFloat(r[7])||0);},0);var NL='%0A';
+  var p=['*Cobranca DTF Pro*','Cliente: '+nome,'Emitido: '+new Date().toLocaleDateString('pt-BR'),'Vencimento: '+fmtData(venc)];
   if(saldoDev>0){p.push('');p.push('SALDO ANTERIOR: '+fmtR(saldoDev));}
-  p.push('');p.push('Servicos:');
-  Object.keys(porDia).sort().forEach(function(dia){
-    p.push('');p.push('Data: '+dia);
-    porDia[dia].forEach(function(r){p.push('- '+(r[10]||r[3]||'-')+' | '+fmt(r[5])+'m | '+fmtR(r[7]));});
-  });
-  p.push('');p.push('Metragem: '+fmt(totM)+' m');p.push('Subtotal: '+fmtR(totSvc));
+  p.push('');p.push('Servicos:');Object.keys(porDia).sort().forEach(function(dia){p.push('');p.push('Data: '+fmtData(dia));porDia[dia].forEach(function(r){p.push('- '+(r[10]||r[3]||'-')+' | '+fmt(r[5])+'m | '+fmtR(r[7]));});});
+  p.push('');p.push('Metragem: '+fmt(totM)+'m');p.push('Subtotal: '+fmtR(totSvc));
   if(saldoDev>0){p.push('Saldo anterior: '+fmtR(saldoDev));p.push('---');}
-  p.push('TOTAL GERAL: '+fmtR(totV));
-  if(chavePix){p.push('');p.push('Pix: '+chavePix);}
+  p.push('TOTAL GERAL: '+fmtR(totV));if(chavePix){p.push('');p.push('Pix: '+chavePix);}
   p.push('');p.push('DTF Pro - Sistema de Gestao');
   var msg=p.join(NL);
-  var tel=cli&&cli.tel?cli.tel.replace(/[^0-9]/g,''):'';
-  var url=tel?'https://wa.me/55'+tel+'?text='+msg:'https://wa.me/?text='+msg;
-  window.open(url,'_blank');
+  getClientes().then(function(cls){var cli=cls.find(function(c){return c.nome===nome;});var tel=cli&&cli.tel?cli.tel.replace(/[^0-9]/g,''):'';var url=tel?'https://wa.me/55'+tel+'?text='+msg:'https://wa.me/?text='+msg;window.open(url,'_blank');});
 }
 
-function renderImportar(){
-  $('main-content').innerHTML=`
-    <div class="card">
-      <div class="card-title"><i class="ti ti-upload"></i>importar arquivo da impressora</div>
-      <div id="drop-zone" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:2rem;text-align:center;color:var(--text2);cursor:pointer;transition:all .15s"
-        onclick="$('file-imp').click()"
-        ondragover="event.preventDefault();this.style.background='var(--surface2)'"
-        ondragleave="this.style.background=''"
-        ondrop="onDropImp(event)">
-        <i class="ti ti-file-spreadsheet" style="font-size:40px;display:block;margin-bottom:10px;color:var(--text3)"></i>
-        <p style="font-weight:500;margin-bottom:4px">Arraste ou clique para selecionar</p>
-        <p style="font-size:12px;color:var(--text3)">producao_AAAA_MM_DTF_01_AZUL.xlsx ou DTF_02_CINZA.xlsx</p>
-      </div>
-      <input type="file" id="file-imp" accept=".xlsx,.xls" class="hidden" onchange="lerArqImp(this.files[0])">
-    </div>
-    <div id="imp-preview"></div>`;
+async function lancarCtaReceber(nome,valor,venc,ctDesc,saldoDev){
+  var ref=saldoDev>0?'Fechamento '+new Date().toLocaleDateString('pt-BR')+' (incl. saldo '+fmtR(saldoDev)+')':'Fechamento '+new Date().toLocaleDateString('pt-BR');
+  await apiPost('financeiro',['timestamp','data','tipo','cliente','vencimento','valor','referencia','forma_pgto','status','obs'],[nowStr(),today(),'receber',nome,venc,valor,ref,ctDesc||'Pix','pendente','gerado no fechamento']);
+  var cls=await getClientes();var idx=cls.findIndex(function(c){return c.nome===nome;});
+  if(idx>=0&&saldoDev>0){cls[idx].saldoDevedor=0;saveClientes(cls);syncCliente(cls[idx]);}
+  delete _cache['financeiro'];toast('Conta a receber lancada no financeiro!');
 }
-
-function onDropImp(e){e.preventDefault();$('drop-zone').style.background='';const f=e.dataTransfer.files[0];if(f)lerArqImp(f);}
-
-async function lerArqImp(file){
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=async function(e){
-    try{
-      if(typeof XLSX==='undefined'){toast('Biblioteca XLSX n\u00E3o carregada');return;}
-      var wb=XLSX.read(e.target.result,{type:'binary'});
-      var ws=wb.Sheets['GERAL'];
-      if(!ws){toast('Aba GERAL n\u00E3o encontrada');return;}
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      await mostrarPreviewImp(rows,file.name);
-    }catch(err){toast('Erro ao ler: '+err.message);}
-  };
-  reader.readAsBinaryString(file);
-}
-
-function calcGrade(larg,comp,qtd,filme=60,eh=0.25,ev=0.25){
-  if(!larg||!comp||!qtd) return{met:0,cols:0,lins:0,sim:0};
-  const cols=Math.max(1,Math.floor(filme/(larg+eh)));
-  const lins=Math.ceil(qtd/cols);
-  return{met:Math.round(lins*(comp+ev)/100*10000)/10000,cols,lins,sim:Math.round(comp*qtd/100*10000)/10000};
-}
-
-let _impDados=[];
+function renderImportar(){$('main-content').innerHTML='<div class="card"><div class="card-title"><i class="ti ti-upload"></i>importar arquivo da impressora</div><div id="drop-zone" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:2rem;text-align:center;color:var(--text2);cursor:pointer;transition:all .15s" onclick="document.getElementById(\'file-imp\').click()" ondragover="event.preventDefault();this.style.background=\'var(--surface2)\'" ondragleave="this.style.background=\'\'" ondrop="onDropImp(event)"><i class="ti ti-file-spreadsheet" style="font-size:40px;display:block;margin-bottom:10px;color:var(--text3)"></i><p style="font-weight:500;margin-bottom:4px">Arraste ou clique para selecionar</p><p style="font-size:12px;color:var(--text3)">producao_AAAA_MM_DTF_01_AZUL.xlsx ou DTF_02_CINZA.xlsx</p></div><input type="file" id="file-imp" accept=".xlsx,.xls" class="hidden" onchange="lerArqImp(this.files[0])"></div><div id="imp-preview"></div>';}
+function onDropImp(e){e.preventDefault();var dz=$('drop-zone');if(dz)dz.style.background='';var f=e.dataTransfer.files[0];if(f)lerArqImp(f);}
+async function lerArqImp(file){if(!file)return;var reader=new FileReader();reader.onload=async function(e){try{if(typeof XLSX==='undefined'){toast('Biblioteca XLSX nao carregada');return;}var wb=XLSX.read(e.target.result,{type:'binary'});var ws=wb.Sheets['GERAL'];if(!ws){toast('Aba GERAL nao encontrada');return;}var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});await mostrarPreviewImp(rows,file.name);}catch(err){toast('Erro ao ler: '+err.message);}};reader.readAsBinaryString(file);}
+function calcGrade(larg,comp,qtd,filme,eh,ev){filme=filme||60;eh=eh||0.25;ev=ev||0.25;if(!larg||!comp||!qtd)return{met:0,cols:0,lins:0,sim:0};var cols=Math.max(1,Math.floor(filme/(larg+eh)));var lins=Math.ceil(qtd/cols);return{met:Math.round(lins*(comp+ev)/100*10000)/10000,cols:cols,lins:lins,sim:Math.round(comp*qtd/100*10000)/10000};}
+var _impDados=[];
 async function mostrarPreviewImp(rows,nome){
-  const cls=await getClientes();
-  _impDados=[];
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i];
-    if(!r[0]||String(r[0]).trim()==='TOTAL') continue;
-    const larg=parseFloat(r[4])||0,comp=parseFloat(r[5])||0,qtd=parseInt(r[6])||0;
-    const obs=String(r[13]||'').trim();
-    if(obs==='Erro RIP') continue;
-    const c=calcGrade(larg,comp,qtd);
-    const cliNome=String(r[2]||'').trim();
-    const vm=getPrecoCli(cliNome,String(r[0]||'').split(' ')[0]);
-    _impDados.push({i,data:String(r[0]||''),imp:String(r[1]||''),cliente:cliNome,
-      arquivo:String(r[3]||''),larg,comp,qtd,cols:c.cols,lins:c.lins,
-      met:c.met,sim:c.sim,val:Math.round(c.met*vm*100)/100,vm,obs,sel:true});
-  }
+  var cls=await getClientes();_impDados=[];
+  for(var i=1;i<rows.length;i++){var r=rows[i];if(!r[0]||String(r[0]).trim()==='TOTAL')continue;var larg=parseFloat(r[4])||0,comp=parseFloat(r[5])||0,qtd=parseInt(r[6])||0;var obs=String(r[13]||'').trim();if(obs==='Erro RIP')continue;var c=calcGrade(larg,comp,qtd);var cliNome=String(r[2]||'').trim();var dataStr=fmtData(String(r[0]||'').split(' ')[0]);var vm=await getPrecoCli(cliNome,dataStr);_impDados.push({i:i,data:dataStr,imp:String(r[1]||''),cliente:cliNome,arquivo:String(r[3]||''),larg:larg,comp:comp,qtd:qtd,cols:c.cols,lins:c.lins,met:c.met,sim:c.sim,val:Math.round(c.met*vm*100)/100,vm:vm,obs:obs,_sel:true});}
   if(!_impDados.length){toast('Nenhum job encontrado');return;}
-  const totM=_impDados.reduce((s,d)=>s+d.met,0);
-  const totV=_impDados.reduce((s,d)=>s+d.val,0);
-  const totSim=_impDados.reduce((s,d)=>s+d.sim,0);
-  $('imp-preview').innerHTML=`
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <p style="font-weight:600">${nome}</p>
-        <div style="display:flex;gap:8px">
-          <span class="badge b-g" style="font-size:13px">${fmt(totM,2)} m (grade)</span>
-          <span class="badge b-a" style="font-size:13px">${fmtR(totV)}</span>
-        </div>
-      </div>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:10px;margin-bottom:10px;font-size:12px;color:var(--text2)">
-        <i class="ti ti-info-circle"></i> Economia vs m\u00E9todo simples: <strong style="color:var(--green)">-${fmt(totSim-totM,2)} m</strong>
-        (${totSim?((totSim-totM)/totSim*100).toFixed(1):0}% de redu\u00E7\u00E3o na metragem cobrada)
-      </div>
-      <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="sel-todos" checked onchange="_impDados.forEach(d=>d.sel=this.checked);mostrarTabelaImp()">
-        Selecionar todos (${_impDados.length} jobs)
-      </label>
-      <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
-        <table class="tbl" id="tbl-imp" style="font-size:12px">
-          <thead style="position:sticky;top:0">
-            <tr><th></th><th>Data</th><th>Impressora</th><th>Cliente</th><th>Arquivo</th>
-            <th>Largura</th><th>Comp.</th><th>Qtd</th><th>Cols</th><th>Linhas</th>
-            <th>Met.Grade</th><th>Met.Simples</th><th>Valor</th></tr>
-          </thead>
-          <tbody id="tbody-imp"></tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-p" onclick="confirmarImp()" style="flex:1;justify-content:center">
-          <i class="ti ti-rocket"></i> Lan\u00E7ar pedidos selecionados
-        </button>
-        <button class="btn" onclick="$('imp-preview').innerHTML=''">Cancelar</button>
-      </div>
-    </div>`;
-  mostrarTabelaImp();
+  var totM=_impDados.reduce(function(s,d){return s+d.met;},0);var totV=_impDados.reduce(function(s,d){return s+d.val;},0);var totS=_impDados.reduce(function(s,d){return s+d.sim;},0);var pct=totS?((totS-totM)/totS*100).toFixed(1):0;
+  var cliOpts=cls.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('');
+  $('imp-preview').innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><p style="font-weight:600">'+nome+'</p><div style="display:flex;gap:8px"><span class="badge b-g" style="font-size:13px">'+fmt(totM,2)+'m (grade)</span><span class="badge b-a" style="font-size:13px">'+fmtR(totV)+'</span></div></div>'
+    +'<div style="background:var(--surface2);border-radius:var(--radius);padding:10px;margin-bottom:10px;font-size:12px;color:var(--text2)"><i class="ti ti-info-circle"></i> Economia vs metodo simples: <strong style="color:var(--green)">-'+fmt(totS-totM,2)+'m</strong> ('+pct+'% de reducao)</div>'
+    +'<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="sel-todos" checked onchange="_impDados.forEach(function(d){d._sel=this.checked;});mostrarTabelaImp()"> Selecionar todos ('+_impDados.length+' jobs)</label>'
+    +'<div style="overflow-x:auto;max-height:380px;overflow-y:auto"><table class="tbl" id="tbl-imp" style="font-size:12px"><thead style="position:sticky;top:0"><tr><th></th><th>Data</th><th>Imp.</th><th>Cliente</th><th>Arquivo</th><th>Larg</th><th>Comp</th><th>Qtd</th><th>Cols</th><th>Lins</th><th>Met.Grade</th><th>Valor</th></tr></thead><tbody id="tbody-imp"></tbody></table></div>'
+    +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-p" onclick="confirmarImp()" style="flex:1;justify-content:center"><i class="ti ti-rocket"></i> Lancar pedidos selecionados</button><button class="btn" onclick="document.getElementById(\'imp-preview\').innerHTML=\'\'">Cancelar</button></div></div>';
+  mostrarTabelaImp(cliOpts);
 }
 
-async function mostrarTabelaImp(){
-  const cls=await getClientes();
-  const opts=cls.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
-  $('tbody-imp').innerHTML=_impDados.map((d,idx)=>`
-    <tr style="${!d.sel?'opacity:.5':''}">
-      <td><input type="checkbox" ${d.sel?'checked':''} onchange="_impDados[${idx}].sel=this.checked;atualizarContImp()"></td>
-      <td style="white-space:nowrap;font-size:11px">${d.data}</td>
-      <td><span class="badge ${d.imp.includes('AZUL')?'b-b':'b-g'}" style="font-size:10px">${d.imp.includes('AZUL')?'Imp.1':'Imp.2'}</span></td>
-      <td><select style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:4px;background:var(--surface);min-width:120px"
-          onchange="_impDados[${idx}].cliente=this.value;_impDados[${idx}].vm=getPrecoCli(this.value);_impDados[${idx}].val=Math.round(_impDados[${idx}].met*_impDados[${idx}].vm*100)/100">
-        <option value="${d.cliente}">${d.cliente||'-- selecionar --'}</option>${opts}
-      </select></td>
-      <td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.arquivo}">${d.arquivo}</td>
-      <td style="text-align:center">${fmt(d.larg,2)}</td>
-      <td style="text-align:center">${fmt(d.comp,2)}</td>
-      <td style="text-align:center">${d.qtd}</td>
-      <td style="text-align:center;color:var(--text2)">${d.cols}</td>
-      <td style="text-align:center;color:var(--text2)">${d.lins}</td>
-      <td style="text-align:center;color:var(--green);font-weight:500">${fmt(d.met,4)}</td>
-      <td style="text-align:center;color:var(--text2);font-size:11px">${fmt(d.sim,4)}</td>
-      <td style="text-align:center;font-weight:500">${fmtR(d.val)}</td>
-    </tr>`).join('');
+function mostrarTabelaImp(cliOpts){
+  if(!cliOpts){getClientes().then(function(cls){mostrarTabelaImp(cls.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join(''));});return;}
+  var body=$('tbody-imp');if(!body)return;var html='';
+  _impDados.forEach(function(d,idx){var imp=(d.imp.toString().includes('AZUL')||d.imp==='1')?'<span class="badge b-b" style="font-size:10px">Imp.1</span>':'<span class="badge b-g" style="font-size:10px">Imp.2</span>';html+='<tr style="'+(d._sel?'':'opacity:.5')+'"><td><input type="checkbox" '+(d._sel?'checked':'')+' onchange="_impDados['+idx+']._sel=this.checked;atualizarContImp()"></td><td style="white-space:nowrap;font-size:11px">'+d.data+'</td><td>'+imp+'</td><td><select style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:4px;background:var(--surface);min-width:120px" onchange="_impDados['+idx+'].cliente=this.value;getPrecoCli(this.value).then(function(p){_impDados['+idx+'].vm=p;_impDados['+idx+'].val=Math.round(_impDados['+idx+'].met*p*100)/100;})"><option value="'+d.cliente+'">'+d.cliente+'</option>'+cliOpts+'</select></td><td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+d.arquivo+'">'+d.arquivo+'</td><td style="text-align:center">'+fmt(d.larg,2)+'</td><td style="text-align:center">'+fmt(d.comp,2)+'</td><td style="text-align:center">'+d.qtd+'</td><td style="text-align:center;color:var(--text2)">'+d.cols+'</td><td style="text-align:center;color:var(--text2)">'+d.lins+'</td><td style="text-align:center;color:var(--green);font-weight:500">'+fmt(d.met,4)+'</td><td style="text-align:center;font-weight:500">'+fmtR(d.val)+'</td></tr>';});
+  body.innerHTML=html;
 }
 
-function atualizarContImp(){
-  const sel=_impDados.filter(d=>d.sel).length;
-  const chk=$('sel-todos');
-  if(chk) chk.checked=sel===_impDados.length;
-}
+function atualizarContImp(){var sel=_impDados.filter(function(d){return d._sel;}).length;var chk=$('sel-todos');if(chk)chk.checked=sel===_impDados.length;}
 
 async function confirmarImp(){
-  const sel=_impDados.filter(d=>d.sel);
-  if(!sel.length){toast('Nenhum job selecionado');return;}
-  const btn=document.querySelector('#imp-preview .btn-p');
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Lan\u00E7ando...';}
-  let ok=0;
-  for(const d of sel){
-    await apiPost('pedidos',
-      ['timestamp','data','periodo','cliente','num_pedido','metros','preco_m','total','maquina','status','descricao','obs'],
-      [nowStr(),d.data.split(' ')[0],'importado',d.cliente,'',d.met,d.vm,d.val,d.imp,'Conclu\u00EDdo',d.arquivo,d.obs]);
-    ok++;
-    await new Promise(r=>setTimeout(r,80));
-  }
-  toast(`${ok} pedidos lan\u00E7ados! OK`);
-  $('imp-preview').innerHTML=`<div class="alert alert-g" style="margin-top:10px">
-    <i class="ti ti-circle-check"></i><strong>${ok} pedidos importados com sucesso</strong> - metragem calculada pela f\u00F3rmula de grade.
-  </div>`;
+  var sel=_impDados.filter(function(d){return d._sel;});if(!sel.length){toast('Nenhum job selecionado');return;}
+  var btn=document.querySelector('#imp-preview .btn-p');if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Lancando...';}
+  var ok=0;for(var i=0;i<sel.length;i++){var d=sel[i];await apiPost('pedidos',['timestamp','data','periodo','cliente','num_pedido','metros','preco_m','total','maquina','status','descricao','obs'],[nowStr(),d.data,'importado',d.cliente,'',d.met,d.vm,d.val,d.imp,'Concluido',d.arquivo,d.obs]);ok++;await new Promise(function(r){setTimeout(r,80);});}
+  toast(ok+' pedidos lancados!');$('imp-preview').innerHTML='<div class="alert alert-g" style="margin-top:10px"><i class="ti ti-circle-check"></i><strong>'+ok+' pedidos importados!</strong></div>';
 }
 
-// =======================================================
-// INSUMOS
-// =======================================================
 async function renderInsumos(){
-  const rows=await apiGet('insumos');
-  $('main-content').innerHTML=`
-    <div class="g2">
-      <div class="card">
-        <div class="card-title"><i class="ti ti-truck"></i>registrar entrada</div>
-        <div class="g2">
-          <div class="f"><label>Data</label><input type="date" id="ins-data" value="${today()}"></div>
-          <div class="f"><label>N\u00BA NF</label><input id="ins-nf" placeholder="NF-001234"></div>
-        </div>
-        <div class="f"><label>Fornecedor</label><input id="ins-forn" placeholder="Nome do fornecedor"></div>
-        <div class="g2">
-          <div class="f"><label>Material</label>
-            <select id="ins-mat"><option>Filme DTF 60cm</option><option>Tinta White</option>
-              <option>Tinta Yellow</option><option>Tinta Magenta</option><option>Tinta Cyan</option>
-              <option>Tinta Black</option><option>TPU (p\u00F3)</option><option>Poliamida</option><option>Outro</option></select>
-          </div>
-          <div class="f"><label>Unidade</label>
-            <select id="ins-unid"><option>metros</option><option>kg</option><option>litros</option><option>unidade</option></select>
-          </div>
-        </div>
-        <div class="g3">
-          <div class="f"><label>Quantidade</label><input type="number" id="ins-qtd" placeholder="0" oninput="calcIns()"></div>
-          <div class="f"><label>Pre\u00E7o unit. (R$)</label><input type="number" id="ins-preco" placeholder="0.00" oninput="calcIns()"></div>
-          <div class="f"><label>Subtotal</label><input type="number" id="ins-sub" readonly style="background:var(--surface2);font-weight:600"></div>
-        </div>
-        <button class="btn btn-p btn-full" onclick="salvarInsumo()"><i class="ti ti-device-floppy"></i> Registrar entrada</button>
-      </div>
-      <div class="card">
-        <div class="card-title"><i class="ti ti-history"></i>\u00FAltimas entradas</div>
-        <div style="overflow-x:auto">
-          <table class="tbl" style="font-size:12px">
-            <thead><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Subtotal</th></tr></thead>
-            <tbody>${rows.slice(1).reverse().slice(0,8).map(r=>`<tr>
-              <td>${r[1]||''}</td><td>${r[4]||''}</td>
-              <td>${fmt(r[6])} ${r[5]||''}</td><td><strong>${fmtR(r[8])}</strong></td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
+  var rows=await apiGet('insumos');var matOpts=['Filme DTF 60cm','Tinta White','Tinta Yellow','Tinta Magenta','Tinta Cyan','Tinta Black','TPU (po)','Poliamida','Outro'].map(function(o){return '<option>'+o+'</option>';}).join('');
+  var ultR='';rows.slice(1).reverse().slice(0,8).forEach(function(r){ultR+='<tr><td>'+fmtData(r[1])+'</td><td>'+(r[4]||'')+'</td><td>'+fmt(r[6])+' '+(r[5]||'')+'</td><td><strong>'+fmtR(r[8])+'</strong></td></tr>';});
+  if(!ultR)ultR='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Nenhuma entrada.</td></tr>';
+  $('main-content').innerHTML='<div class="g2"><div class="card"><div class="card-title"><i class="ti ti-truck"></i>registrar entrada</div>'
+    +'<div class="g2"><div class="f"><label>Data</label><input type="date" id="ins-data" value="'+today()+'"></div><div class="f"><label>Nr NF</label><input id="ins-nf" placeholder="NF-001234"></div></div>'
+    +'<div class="f"><label>Fornecedor</label><input id="ins-forn" placeholder="Nome do fornecedor"></div>'
+    +'<div class="g2"><div class="f"><label>Material</label><select id="ins-mat">'+matOpts+'</select></div><div class="f"><label>Unidade</label><select id="ins-unid"><option>metros</option><option>kg</option><option>litros</option><option>unidade</option></select></div></div>'
+    +'<div class="g3"><div class="f"><label>Quantidade</label><input type="number" id="ins-qtd" placeholder="0" oninput="calcIns()"></div><div class="f"><label>Preco unit. (R$)</label><input type="number" id="ins-preco" placeholder="0.00" oninput="calcIns()"></div><div class="f"><label>Subtotal</label><input type="number" id="ins-sub" readonly style="background:var(--surface2);font-weight:600"></div></div>'
+    +'<button class="btn btn-p btn-full" onclick="salvarInsumo()"><i class="ti ti-device-floppy"></i> Registrar entrada</button></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-history"></i>ultimas entradas</div><div style="overflow-x:auto"><table class="tbl" style="font-size:12px"><thead><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Subtotal</th></tr></thead><tbody>'+ultR+'</tbody></table></div></div></div>';
 }
 
-function calcIns(){
-  const q=parseFloat(v('ins-qtd'))||0,p=parseFloat(v('ins-preco'))||0;
-  const el=$('ins-sub');if(el)el.value=(q*p).toFixed(2);
+function calcIns(){var q=parseFloat(v('ins-qtd'))||0,p=parseFloat(v('ins-preco'))||0;var el=$('ins-sub');if(el)el.value=(q*p).toFixed(2);}
+async function salvarInsumo(){if(!v('ins-forn').trim()){toast('Informe o fornecedor');return;}if(!(parseFloat(v('ins-qtd'))||0)){toast('Informe a quantidade');return;}var sub=(parseFloat(v('ins-qtd'))||0)*(parseFloat(v('ins-preco'))||0);await apiPost('insumos',['timestamp','data','nf','fornecedor','material','unidade','quantidade','preco_unit','subtotal','obs'],[nowStr(),v('ins-data'),v('ins-nf'),v('ins-forn'),v('ins-mat'),v('ins-unid'),v('ins-qtd'),v('ins-preco'),sub.toFixed(2),'']);toast('Entrada registrada!');delete _cache['insumos'];renderInsumos();}
+function renderRelatorios(){$('main-content').innerHTML='<div class="g2"><div style="margin-bottom:12px"><div class="card" style="cursor:pointer;margin-bottom:0" onclick="gerarRelProd()"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><i class="ti ti-printer" style="font-size:24px;color:var(--text2)"></i><p style="font-weight:600;font-size:14px">Producao</p></div><p style="font-size:12px;color:var(--text2)">Metragem, perdas e aproveitamento por impressora</p><div style="margin-top:10px;display:flex;gap:6px"><button class="btn btn-sm btn-b"><i class="ti ti-eye"></i> Ver</button></div></div><div class="card" style="cursor:pointer" onclick="gerarRelCli()"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><i class="ti ti-users" style="font-size:24px;color:var(--text2)"></i><p style="font-weight:600;font-size:14px">Por cliente</p></div><p style="font-size:12px;color:var(--text2)">Faturamento, ticket medio e ranking</p><div style="margin-top:10px;display:flex;gap:6px"><button class="btn btn-sm btn-b"><i class="ti ti-eye"></i> Ver</button></div></div></div><div><div class="card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><i class="ti ti-currency-dollar" style="font-size:24px;color:var(--text2)"></i><p style="font-weight:600;font-size:14px">Financeiro</p></div><p style="font-size:12px;color:var(--text2)">A receber, pagar e saldo do periodo</p><div style="margin-top:10px;display:flex;gap:6px"><button class="btn btn-sm btn-b" onclick="gerarRelFin()"><i class="ti ti-eye"></i> Ver</button><button class="btn btn-sm" onclick="exportCSV(\'financeiro\')"><i class="ti ti-download"></i> CSV</button></div></div><div class="card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><i class="ti ti-package" style="font-size:24px;color:var(--text2)"></i><p style="font-weight:600;font-size:14px">Insumos</p></div><p style="font-size:12px;color:var(--text2)">Compras e gastos com materiais</p><div style="margin-top:10px;display:flex;gap:6px"><button class="btn btn-sm btn-b" onclick="gerarRelIns()"><i class="ti ti-eye"></i> Ver</button><button class="btn btn-sm" onclick="exportCSV(\'insumos\')"><i class="ti ti-download"></i> CSV</button></div></div></div></div><div id="rel-output"></div>';}
+
+async function gerarRelProd(){var rows=await apiGet('producao');var pd=rows.slice(1);function sc(c){return pd.reduce(function(s,r){return s+(parseFloat(r[c])||0);},0);}var tot=sc(5),perd=sc(13),aprov=(tot+perd)>0?(tot/(tot+perd)*100).toFixed(1):0;var trows='';pd.forEach(function(r){var imp=(r[1]||'').toString().includes('AZUL')||r[1]==='1'?'<span class="badge b-b">Imp.1</span>':'<span class="badge b-g">Imp.2</span>';trows+='<tr><td>'+fmtData(r[2])+'</td><td>'+imp+'</td><td>'+(r[4]||'')+'</td><td><strong>'+fmt(r[5])+'m</strong></td><td>'+fmt(r[13]||0)+'m</td><td>'+fmt(r[6]||0,0)+'g</td><td>'+fmt(r[7]||0,0)+'g</td><td>'+fmt(r[8]||0,0)+'g</td><td>'+fmt(r[9]||0,0)+'g</td><td>'+fmt(r[10]||0,0)+'g</td><td>'+fmt(r[14]||0,1)+'</td></tr>';});if(!trows)trows='<tr><td colspan="11" style="text-align:center;color:var(--text3)">Nenhum dado.</td></tr>';$('rel-output').innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:12px"><p style="font-weight:600;font-size:15px">Relatorio de Producao</p><button class="btn btn-sm" onclick="window.print()"><i class="ti ti-printer"></i> Imprimir</button></div><div class="g4" style="margin-bottom:12px"><div class="kpi"><div class="kpi-l">Total produzido</div><div class="kpi-v">'+fmt(tot)+'m</div></div><div class="kpi"><div class="kpi-l">Perdas</div><div class="kpi-v">'+fmt(perd)+'m</div></div><div class="kpi"><div class="kpi-l">Aproveitamento</div><div class="kpi-v">'+aprov+'%</div></div><div class="kpi"><div class="kpi-l">Energia total</div><div class="kpi-v">'+fmt(sc(14),1)+' kWh</div></div></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Imp.</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>White</th><th>Yellow</th><th>Magenta</th><th>Cyan</th><th>Black</th><th>kWh</th></tr></thead><tbody>'+trows+'</tbody></table></div></div>';}
+
+async function gerarRelCli(){var rows=await apiGet('pedidos');var por={};rows.slice(1).forEach(function(r){var c=r[3]||'?';if(!por[c])por[c]={jobs:0,m:0,v:0};por[c].jobs++;por[c].m+=parseFloat(r[5])||0;por[c].v+=parseFloat(r[7])||0;});var sorted=Object.entries(por).sort(function(a,b){return b[1].v-a[1].v;});var totV=sorted.reduce(function(s,x){return s+x[1].v;},0);var trows='';sorted.forEach(function(x){var n=x[0],d=x[1];trows+='<tr><td><strong>'+n+'</strong></td><td>'+d.jobs+'</td><td>'+fmt(d.m)+'m</td><td><strong>'+fmtR(d.v)+'</strong></td><td>'+fmtR(d.jobs?d.v/d.jobs:0)+'</td><td>'+(totV?(d.v/totV*100).toFixed(1):0)+'%</td></tr>';});if(!trows)trows='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Nenhum dado.</td></tr>';$('rel-output').innerHTML='<div class="card"><p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatorio por Cliente</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Cliente</th><th>Jobs</th><th>Metragem</th><th>Faturamento</th><th>Ticket medio</th><th>% total</th></tr></thead><tbody>'+trows+'</tbody></table></div></div>';}
+
+async function gerarRelFin(){var rows=await apiGet('financeiro');var d=rows.slice(1);var rec=d.filter(function(r){return r[2]==='receber';});var pag=d.filter(function(r){return r[2]==='pagar';});function sV(a){return a.reduce(function(s,r){return s+(parseFloat(r[5])||0);},0);}var trows='';d.forEach(function(r){trows+='<tr><td>'+fmtData(r[1])+'</td><td><span class="badge '+(r[2]==='receber'?'b-g':'b-r')+'">'+r[2]+'</span></td><td>'+(r[3]||'')+'</td><td style="font-size:12px">'+(r[6]||'')+'</td><td><strong>'+fmtR(r[5])+'</strong></td><td>'+fmtData(r[4])+'</td><td><span class="badge '+(r[8]==='pago'||r[8]==='recebido'?'b-g':'b-a')+'">'+(r[8]||'pendente')+'</span></td></tr>';});if(!trows)trows='<tr><td colspan="7" style="text-align:center;color:var(--text3)">Nenhum dado.</td></tr>';$('rel-output').innerHTML='<div class="card"><p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatorio Financeiro</p><div class="g3" style="margin-bottom:12px"><div class="kpi"><div class="kpi-l">Total a receber</div><div class="kpi-v" style="color:var(--green)">'+fmtR(sV(rec))+'</div></div><div class="kpi"><div class="kpi-l">Total a pagar</div><div class="kpi-v" style="color:var(--red)">'+fmtR(sV(pag))+'</div></div><div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">'+fmtR(sV(rec)-sV(pag))+'</div></div></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Tipo</th><th>Cliente/Forn.</th><th>Referencia</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>'+trows+'</tbody></table></div></div>';}
+
+async function gerarRelIns(){var rows=await apiGet('insumos');var d=rows.slice(1);var tot=d.reduce(function(s,r){return s+(parseFloat(r[8])||0);},0);var trows='';d.forEach(function(r){trows+='<tr><td>'+fmtData(r[1])+'</td><td>'+(r[2]||'')+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td>'+fmt(r[6])+' '+(r[5]||'')+'</td><td>'+fmtR(r[7])+'</td><td><strong>'+fmtR(r[8])+'</strong></td></tr>';});if(!trows)trows='<tr><td colspan="7" style="text-align:center;color:var(--text3)">Nenhum dado.</td></tr>';$('rel-output').innerHTML='<div class="card"><p style="font-weight:600;font-size:15px;margin-bottom:12px">Relatorio de Insumos - Total: '+fmtR(tot)+'</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>NF</th><th>Fornecedor</th><th>Material</th><th>Qtd</th><th>Preco unit.</th><th>Subtotal</th></tr></thead><tbody>'+trows+'</tbody></table></div></div>';}
+
+async function exportCSV(aba){var rows=await apiGet(aba,true);var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');}).join(String.fromCharCode(10));var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=aba+'_'+today()+'.csv';a.click();toast('CSV exportado!');}
+async function renderConfig(){
+  loadUsersFromSheets().then(function(){}).catch(function(){});
+  var usrs=getUsers(),contas=await getContas(),cfg=store.get('dtf_vis')||{};
+  var togs=[['ocultar_valores','Ocultar todos os valores financeiros'],['ocultar_preco','Ocultar preco/m dos clientes'],['ocultar_total','Ocultar valor total dos pedidos']];
+  var togH='';togs.forEach(function(t){var at=cfg[t[0]];togH+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">'+t[1]+'</span><button onclick="toggleVis(\''+t[0]+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(at?'var(--green)':'var(--border2)')+';border:none;cursor:pointer;position:relative;transition:background .2s"><span style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;'+(at?'right:3px':'left:3px')+';transition:all .2s;display:block"></span></button></div>';});
+  var usrR='';usrs.forEach(function(u){var at=u.ativo!==false;var aBtn=u.id!==CU.id?'<button onclick="toggleAcesso('+u.id+')" style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:none;background:'+(at?'var(--green-bg)':'var(--red-bg)')+';color:'+(at?'var(--green)':'var(--red)')+'"><i class="ti ti-'+(at?'lock-open':'lock')+'" style="font-size:13px"></i>'+(at?'Liberado':'Bloqueado')+'</button>':'<span class="badge b-a">admin</span>';var rBtn=u.id!==CU.id?'<button class="btn btn-xs btn-r" onclick="remUser('+u.id+')"><i class="ti ti-trash"></i></button>':'';usrR+='<tr style="'+(at?'':'opacity:.6')+'"><td><strong>'+u.nome+'</strong></td><td><code style="font-size:12px;background:var(--surface2);padding:1px 6px;border-radius:4px">'+u.login+'</code></td><td><span class="badge '+(u.perfil==='admin'?'b-a':'b-g')+'">'+u.perfil+'</span></td><td>'+(u.maquina?'Imp. '+u.maquina:'-')+'</td><td>'+aBtn+'</td><td>'+rBtn+'</td></tr>';});
+  var ctH='';if(!contas.length)ctH='<p style="font-size:12px;color:var(--text3)">Nenhuma conta cadastrada.</p>';else contas.forEach(function(c,i){ctH+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><i class="ti ti-wallet" style="font-size:18px;color:var(--green)"></i><div><p style="font-size:13px;font-weight:500">'+c.desc+'</p><p style="font-size:12px;color:var(--text2)">'+c.chave+(c.fav?' - '+c.fav:'')+'</p></div></div><button class="btn btn-xs btn-r" onclick="remConta('+i+')"><i class="ti ti-trash"></i></button></div>';});
+  $('main-content').innerHTML='<div class="card"><div class="card-title"><i class="ti ti-shield"></i>visibilidade para operadores</div>'+togH+'</div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-wallet"></i>minhas contas para recebimento</div><p style="font-size:12px;color:var(--text2);margin-bottom:10px">Cadastre suas contas Pix e bancarias.</p><div id="lista-contas-config">'+ctH+'</div>'
+    +'<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-top:10px"><p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar conta</p>'
+    +'<div class="g3"><div class="f"><label>Tipo</label><select id="cc-tipo"><option value="pix">Pix</option><option value="transferencia">Transferencia</option><option value="dinheiro">Dinheiro</option></select></div><div class="f"><label>Descricao</label><input id="cc-desc" placeholder="Ex: Pix principal..."></div><div class="f"><label>Chave / Dados</label><input id="cc-chave" placeholder="CPF, e-mail, telefone..."></div></div>'
+    +'<div class="f"><label>Nome do favorecido</label><input id="cc-fav" placeholder="Nome que aparecera no documento"></div>'
+    +'<button class="btn btn-p btn-sm" style="margin-top:4px" onclick="addConta()"><i class="ti ti-plus"></i> Adicionar conta</button></div></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-users"></i>usuarios</div>'
+    +'<table class="tbl" style="margin-bottom:12px"><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Maquina</th><th>Acesso</th><th></th></tr></thead><tbody>'+usrR+'</tbody></table>'
+    +'<p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar usuario</p>'
+    +'<div class="g3"><div class="f"><label>Nome</label><input id="un-nome"></div><div class="f"><label>Login</label><input id="un-login"></div><div class="f"><label>Senha</label><input id="un-senha"></div></div>'
+    +'<div class="g2"><div class="f"><label>Perfil</label><select id="un-perfil"><option value="operador">Operador</option><option value="admin">Admin</option></select></div><div class="f"><label>Maquina</label><select id="un-maq"><option value="1">Impressora 1</option><option value="2">Impressora 2</option></select></div></div>'
+    +'<button class="btn btn-p btn-sm" onclick="addUser()"><i class="ti ti-plus"></i> Adicionar</button></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-database-export"></i>backup completo</div><p style="font-size:13px;color:var(--text2);margin-bottom:12px">Gera um arquivo Excel com todos os dados.</p><button class="btn btn-p" id="btn-backup" onclick="fazerBackup()" style="padding:10px 20px"><i class="ti ti-database-export"></i> Fazer backup agora</button><p style="font-size:11px;color:var(--text3);margin-top:8px">O arquivo sera baixado com a data no nome: backup_dtf_DDMMAAAA.xlsx</p></div>'
+    +'<div class="card"><div class="card-title"><i class="ti ti-download"></i>exportar por categoria</div><div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +['producao','financeiro','pedidos','insumos','clientes'].map(function(a){return '<button class="btn btn-sm" onclick="exportCSV(\''+a+'\')"><i class="ti ti-file-spreadsheet"></i> '+a+'</button>';}).join('')
+    +'</div></div>';
 }
 
-async function salvarInsumo(){
-  if(!v('ins-forn').trim()){toast('Informe o fornecedor');return;}
-  if(!(parseFloat(v('ins-qtd'))||0)){toast('Informe a quantidade');return;}
-  const sub=(parseFloat(v('ins-qtd'))||0)*(parseFloat(v('ins-preco'))||0);
-  await apiPost('insumos',
-    ['timestamp','data','nf','fornecedor','material','unidade','quantidade','preco_unit','subtotal','obs'],
-    [nowStr(),v('ins-data'),v('ins-nf'),v('ins-forn'),v('ins-mat'),v('ins-unid'),v('ins-qtd'),v('ins-preco'),sub.toFixed(2),'']);
-  toast('Entrada registrada!');delete _cache['insumos'];renderInsumos();
-}
+function toggleVis(k){var cfg=store.get('dtf_vis')||{};cfg[k]=!cfg[k];store.set('dtf_vis',cfg);renderConfig();}
 
-// =======================================================
-// RELAT\u00D3RIOS
-// =======================================================
-function renderRelatorios(){
-  $('main-content').innerHTML=`
-    <div class="g2">
-      <div style="margin-bottom:12px">
-        <div class="card" style="cursor:pointer" onclick="gerarRelProducao()">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <i class="ti ti-printer" style="font-size:24px;color:var(--text2)"></i>
-            <p style="font-weight:600;font-size:14px">Produ\u00E7\u00E3o</p>
-          </div>
-          <p style="font-size:12px;color:var(--text2)">Metragem, perdas e aproveitamento por impressora</p>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <button class="btn btn-sm btn-b"><i class="ti ti-eye"></i> Ver</button>
-            <button class="btn btn-sm"><i class="ti ti-download"></i> CSV</button>
-          </div>
-        </div>
-        <div class="card" style="cursor:pointer;margin-top:0" onclick="gerarRelClientes()">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <i class="ti ti-users" style="font-size:24px;color:var(--text2)"></i>
-            <p style="font-weight:600;font-size:14px">Por cliente</p>
-          </div>
-          <p style="font-size:12px;color:var(--text2)">Faturamento, ticket m\u00E9dio e ranking</p>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <button class="btn btn-sm btn-b"><i class="ti ti-eye"></i> Ver</button>
-            <button class="btn btn-sm"><i class="ti ti-download"></i> CSV</button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="card" style="cursor:pointer">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <i class="ti ti-currency-dollar" style="font-size:24px;color:var(--text2)"></i>
-            <p style="font-weight:600;font-size:14px">Financeiro</p>
-          </div>
-          <p style="font-size:12px;color:var(--text2)">A receber, pagar e saldo do per\u00EDodo</p>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <button class="btn btn-sm btn-b" onclick="gerarRelFinanceiro()"><i class="ti ti-eye"></i> Ver</button>
-            <button class="btn btn-sm" onclick="exportCSV('financeiro')"><i class="ti ti-download"></i> CSV</button>
-          </div>
-        </div>
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-            <i class="ti ti-package" style="font-size:24px;color:var(--text2)"></i>
-            <p style="font-weight:600;font-size:14px">Insumos</p>
-          </div>
-          <p style="font-size:12px;color:var(--text2)">Compras e gastos com materiais</p>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <button class="btn btn-sm btn-b" onclick="gerarRelInsumos()"><i class="ti ti-eye"></i> Ver</button>
-            <button class="btn btn-sm" onclick="exportCSV('insumos')"><i class="ti ti-download"></i> CSV</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="rel-output"></div>`;
-}
+async function addConta(){var tipo=v('cc-tipo'),desc=v('cc-desc').trim(),chave=v('cc-chave').trim(),fav=v('cc-fav').trim();if(!desc||!chave){toast('Preencha descricao e chave');return;}var contas=await getContas();var nova={id:Date.now(),tipo:tipo,desc:desc,chave:chave,fav:fav};contas.push(nova);saveContas(contas);apiPost('contas',['id','tipo','desc','chave','fav'],[nova.id,tipo,desc,chave,fav]);toast('Conta adicionada!');['cc-desc','cc-chave','cc-fav'].forEach(function(id){var el=$(id);if(el)el.value='';});renderConfig();}
+async function remConta(i){if(!confirm('Remover esta conta?'))return;var contas=await getContas();contas.splice(i,1);saveContas(contas);_contasCache=null;delete _cache['contas'];toast('Conta removida');renderConfig();}
+function addUser(){var nome=v('un-nome').trim(),login=v('un-login').trim(),senha=v('un-senha').trim();if(!nome||!login||!senha){toast('Preencha todos os campos');return;}var usrs=getUsers();if(usrs.find(function(u){return u.login===login;})){toast('Login ja existe');return;}var nu={id:Date.now(),nome:nome,login:login,senha:senha,perfil:v('un-perfil'),maquina:parseInt(v('un-maq')),ativo:true};usrs.push(nu);store.set('dtf_users',usrs);_usersCache=usrs;syncUser(nu);toast('Usuario adicionado!');renderConfig();}
+function remUser(id){if(!confirm('Remover?'))return;var usrs=getUsers().filter(function(u){return u.id!==id;});store.set('dtf_users',usrs);_usersCache=usrs;toast('Removido');renderConfig();}
+function toggleAcesso(id){var usrs=getUsers();var idx=usrs.findIndex(function(u){return u.id===id;});if(idx<0)return;usrs[idx].ativo=usrs[idx].ativo===false?true:false;store.set('dtf_users',usrs);_usersCache=usrs;syncUser(usrs[idx]);toast(usrs[idx].nome+' - acesso '+(usrs[idx].ativo?'liberado':'bloqueado'));renderConfig();}
 
-async function gerarRelProducao(){
-  const rows=await apiGet('producao');
-  const pd=rows.slice(1);
-  const sum=(c)=>pd.reduce((s,r)=>s+(parseFloat(r[c])||0),0);
-  const m1=pd.filter(r=>(r[1]||'').includes('AZUL'));
-  const m2=pd.filter(r=>(r[1]||'').includes('CINZA'));
-  $('rel-output').innerHTML=`<div class="card">
-    <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-      <p style="font-weight:600;font-size:15px">Relat\u00F3rio de Produ\u00E7\u00E3o</p>
-      <button class="btn btn-sm" onclick="window.print()"><i class="ti ti-printer"></i> Imprimir</button>
-    </div>
-    <div class="g4" style="margin-bottom:12px">
-      <div class="kpi"><div class="kpi-l">Total produzido</div><div class="kpi-v">${fmt(sum(5))} m</div></div>
-      <div class="kpi"><div class="kpi-l">Perdas</div><div class="kpi-v">${fmt(sum(13))} m</div></div>
-      <div class="kpi"><div class="kpi-l">Aproveitamento</div><div class="kpi-v">${(sum(5)+sum(13)>0?sum(5)/(sum(5)+sum(13))*100:0).toFixed(1)}%</div></div>
-      <div class="kpi"><div class="kpi-l">Energia total</div><div class="kpi-v">${fmt(sum(14),1)} kWh</div></div>
-    </div>
-    <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>Impressora</th><th>Operador</th><th>Metros</th><th>Perdas</th><th>White</th><th>Yellow</th><th>Magenta</th><th>Cyan</th><th>Black</th><th>kWh</th></tr></thead>
-      <tbody>${pd.map(r=>`<tr>
-        <td>${fmtData(r[2])}</td>
-        <td><span class="badge ${(r[1]||'').includes('AZUL')?'b-b':'b-g'}">${(r[1]||'').includes('AZUL')?'Imp.1':'Imp.2'}</span></td>
-        <td>${r[4]||''}</td><td><strong>${fmt(r[5])} m</strong></td><td>${fmt(r[13]||0)} m</td>
-        <td>${fmt(r[6]||0,0)}g</td><td>${fmt(r[7]||0,0)}g</td><td>${fmt(r[8]||0,0)}g</td>
-        <td>${fmt(r[9]||0,0)}g</td><td>${fmt(r[10]||0,0)}g</td><td>${fmt(r[14]||0,1)}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>
-  </div>`;
-}
+async function fazerBackup(){var btn=$('btn-backup');if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Gerando...';}toast('Buscando dados...aguarde',5000);try{var prod=await apiGet('producao',true),fin=await apiGet('financeiro',true),ped=await apiGet('pedidos',true),ins=await apiGet('insumos',true),cliL=await getClientes();if(typeof XLSX==='undefined'){toast('Erro: biblioteca nao carregada');return;}var wb=XLSX.utils.book_new();var res=[['DTF Pro - Backup'],['Gerado em:',new Date().toLocaleString('pt-BR')],[''],['Fonte','Registros'],['Producao',prod.slice(1).length],['Pedidos',ped.slice(1).length],['Financeiro',fin.slice(1).length],['Insumos',ins.slice(1).length],['Clientes',cliL.length]];XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(res),'Resumo');var cR=[['ID','Nome','CPF/CNPJ','Telefone','Email','Preco/m','Ciclo','Pgto','Pix','Obs','Data Cad.','Saldo Devedor']];cliL.forEach(function(c){cR.push([c.id,c.nome,c.doc||'',c.tel||'',c.email||'',c.preco_m||0,c.ciclo||'',c.pgto||'',c.pix||'',c.obs||'',c.dataCad||'',c.saldoDevedor||0]);});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cR),'Clientes');[{dados:prod,nome:'Producao'},{dados:ped,nome:'Pedidos'},{dados:fin,nome:'Financeiro'},{dados:ins,nome:'Insumos'}].forEach(function(x){if(!x.dados.length)return;XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(x.dados),x.nome);});var ds=new Date().toLocaleDateString('pt-BR').replace(/\//g,'');XLSX.writeFile(wb,'backup_dtf_'+ds+'.xlsx');toast('Backup salvo! backup_dtf_'+ds+'.xlsx',4000);}catch(e){toast('Erro no backup: '+e.message);}finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-database-export"></i> Fazer backup agora';}}}
 
-async function gerarRelClientes(){
-  const rows=await apiGet('pedidos');
-  const por={};
-  rows.slice(1).forEach(r=>{
-    const c=r[3]||'?';
-    if(!por[c])por[c]={jobs:0,m:0,v:0};
-    por[c].jobs++;por[c].m+=parseFloat(r[5])||0;por[c].v+=parseFloat(r[7])||0;
-  });
-  const sorted=Object.entries(por).sort((a,b)=>b[1].v-a[1].v);
-  const totV=sorted.reduce((s,[,d])=>s+d.v,0);
-  $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio por Cliente</p>
-    <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Cliente</th><th>Jobs</th><th>Metragem</th><th>Faturamento</th><th>Ticket m\u00E9dio</th><th>% do total</th></tr></thead>
-      <tbody>${sorted.map(([n,d])=>`<tr>
-        <td><strong>${n}</strong></td><td>${d.jobs}</td>
-        <td>${fmt(d.m)} m</td>
-        <td><strong>${fmtR(d.v)}</strong></td>
-        <td>${fmtR(d.jobs?d.v/d.jobs:0)}</td>
-        <td>${totV?(d.v/totV*100).toFixed(1):0}%</td>
-      </tr>`).join('')}</tbody>
-    </table></div>
-  </div>`;
-}
+function notifyHeight(){var h=Math.max(document.body.scrollHeight,document.body.offsetHeight,window.innerHeight,800);try{window.parent.postMessage({type:'setHeight',height:h},'*');}catch(e){}try{if(window.frameElement){window.frameElement.style.height=h+'px';window.frameElement.style.minHeight='100vh';}}catch(e){}}
 
-async function gerarRelFinanceiro(){
-  const rows=await apiGet('financeiro');
-  const d=rows.slice(1);
-  const rec=d.filter(r=>r[2]==='receber'),pag=d.filter(r=>r[2]==='pagar');
-  const sumV=a=>a.reduce((s,r)=>s+(parseFloat(r[5])||0),0);
-  $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio Financeiro</p>
-    <div class="g3" style="margin-bottom:12px">
-      <div class="kpi"><div class="kpi-l">Total a receber</div><div class="kpi-v" style="color:var(--green)">${fmtR(sumV(rec))}</div></div>
-      <div class="kpi"><div class="kpi-l">Total a pagar</div><div class="kpi-v" style="color:var(--red)">${fmtR(sumV(pag))}</div></div>
-      <div class="kpi"><div class="kpi-l">Saldo</div><div class="kpi-v">${fmtR(sumV(rec)-sumV(pag))}</div></div>
-    </div>
-    <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>Tipo</th><th>Cliente/Forn.</th><th>Refer\u00EAncia</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
-      <tbody>${d.map(r=>`<tr>
-        <td>${r[1]||''}</td>
-        <td><span class="badge ${r[2]==='receber'?'b-g':'b-r'}">${r[2]}</span></td>
-        <td>${r[3]||''}</td><td style="font-size:12px">${r[6]||''}</td>
-        <td><strong>${fmtR(r[5])}</strong></td><td>${r[4]||''}</td>
-        <td><span class="badge ${r[8]==='pago'||r[8]==='recebido'?'b-g':'b-a'}">${r[8]||'pendente'}</span></td>
-      </tr>`).join('')}</tbody>
-    </table></div>
-  </div>`;
-}
-
-async function gerarRelInsumos(){
-  const rows=await apiGet('insumos');
-  const d=rows.slice(1);
-  const tot=d.reduce((s,r)=>s+(parseFloat(r[8])||0),0);
-  $('rel-output').innerHTML=`<div class="card">
-    <p style="font-weight:600;font-size:15px;margin-bottom:12px">Relat\u00F3rio de Insumos - Total: ${fmtR(tot)}</p>
-    <div style="overflow-x:auto"><table class="tbl">
-      <thead><tr><th>Data</th><th>NF</th><th>Fornecedor</th><th>Material</th><th>Qtd</th><th>Pre\u00E7o unit.</th><th>Subtotal</th></tr></thead>
-      <tbody>${d.map(r=>`<tr>
-        <td>${r[1]||''}</td><td>${fmtData(r[2])}</td><td>${r[3]||''}</td><td>${r[4]||''}</td>
-        <td>${fmt(r[6])} ${r[5]||''}</td><td>${fmtR(r[7])}</td><td><strong>${fmtR(r[8])}</strong></td>
-      </tr>`).join('')}</tbody>
-    </table></div>
-  </div>`;
-}
-
-async function exportCSV(aba){
-  const rows=await apiGet(aba,true);
-  const csv=rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join(String.fromCharCode(10));
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download=`${aba}_${today()}.csv`;a.click();
-  toast('CSV exportado!');
-}
-
-// =======================================================
-// CONFIG
-// =======================================================
-function renderConfig(){
-  renderListaContas();
-  const usrs=getUsers();
-  const cfg=store.get('dtf_vis')||{};
-  $('main-content').innerHTML=`
-    <div class="card">
-      <div class="card-title"><i class="ti ti-shield"></i>visibilidade para operadores</div>
-      ${[['ocultar_valores','Ocultar todos os valores financeiros'],
-         ['ocultar_preco','Ocultar pre\u00E7o/m dos clientes'],
-         ['ocultar_total','Ocultar valor total dos pedidos']].map(([k,l])=>`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:13px">${l}</span>
-          <button onclick="toggleVis('${k}')" style="width:44px;height:24px;border-radius:12px;background:${cfg[k]?'var(--green)':'var(--border2)'};border:none;cursor:pointer;position:relative;transition:background .2s">
-            <span style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;${cfg[k]?'right:3px':'left:3px'};transition:all .2s;display:block"></span>
-          </button>
-        </div>`).join('')}
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-users"></i>usu\u00E1rios</div>
-      <table class="tbl" style="margin-bottom:12px">
-        <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>M\u00E1quina</th><th>Acesso</th><th></th></tr></thead>
-        <tbody>${usrs.map(u=>`<tr style="${u.ativo===false?'opacity:.6':''}">
-          <td><strong>${u.nome}</strong></td>
-          <td><code style="font-size:12px;background:var(--surface2);padding:1px 6px;border-radius:4px">${u.login}</code></td>
-          <td><span class="badge ${u.perfil==='admin'?'b-a':'b-g'}">${u.perfil}</span></td>
-          <td>${u.maquina?'Imp. '+u.maquina:'-'}</td>
-          <td>
-            ${u.id!==CU.id?`
-              <button onclick="toggleAcesso(${u.id})"
-                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:none;background:${u.ativo===false?'var(--red-bg)':'var(--green-bg)'};color:${u.ativo===false?'var(--red)':'var(--green)'};transition:all .2s">
-                <i class="ti ti-${u.ativo===false?'lock':'lock-open'}" style="font-size:13px"></i>
-                ${u.ativo===false?'Bloqueado':'Liberado'}
-              </button>`:'<span class="badge b-a">admin</span>'}
-          </td>
-          <td>${u.id!==CU.id?`<button class="btn btn-xs btn-r" onclick="remUser(${u.id})"><i class="ti ti-trash"></i></button>`:''}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar usu\u00E1rio</p>
-      <div class="g3">
-        <div class="f"><label>Nome</label><input id="un-nome"></div>
-        <div class="f"><label>Login</label><input id="un-login"></div>
-        <div class="f"><label>Senha</label><input id="un-senha"></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Perfil</label><select id="un-perfil"><option value="operador">Operador</option><option value="admin">Admin</option></select></div>
-        <div class="f"><label>M\u00E1quina</label><select id="un-maq"><option value="1">Impressora 1</option><option value="2">Impressora 2</option></select></div>
-      </div>
-      <button class="btn btn-p btn-sm" onclick="addUser()"><i class="ti ti-plus"></i> Adicionar</button>
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-database-export"></i>backup completo</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
-        Gera um arquivo Excel com todos os dados: clientes, pedidos, financeiro, produ\u00E7\u00E3o e insumos.
-        Salve em local seguro regularmente.
-      </p>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
-        <i class="ti ti-info-circle" style="font-size:18px;color:var(--text2);flex-shrink:0"></i>
-        <p style="font-size:12px;color:var(--text2)">
-          O arquivo gerado cont\u00E9m: <strong>Resumo . Clientes . Pedidos . Financeiro . Produ\u00E7\u00E3o . Insumos</strong>
-          - uma aba por tipo de dado.
-        </p>
-      </div>
-      <button class="btn btn-p" id="btn-backup" onclick="fazerBackup()" style="padding:10px 20px">
-        <i class="ti ti-database-export"></i> Fazer backup agora
-      </button>
-      <p style="font-size:11px;color:var(--text3);margin-top:8px">
-        O arquivo ser\u00E1 baixado com a data no nome: backup_dtf_DDMMAAAA.xlsx
-      </p>
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-wallet"></i>minhas contas para recebimento</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:10px">
-        Cadastre suas contas Pix e banc\u00E1rias. Na hora do fechamento voc\u00EA escolhe qual usar.
-      </p>
-      <div id="lista-contas-config"></div>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-top:10px">
-        <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Adicionar conta</p>
-        <div class="g3">
-          <div class="f"><label>Tipo</label>
-            <select id="cc-tipo">
-              <option value="pix">Pix</option>
-              <option value="transferencia">Transfer\u00EAncia</option>
-              <option value="dinheiro">Dinheiro</option>
-            </select>
-          </div>
-          <div class="f"><label>Descri\u00E7\u00E3o</label>
-            <input id="cc-desc" placeholder="Ex: Pix principal, Banco X...">
-          </div>
-          <div class="f"><label>Chave / Dados</label>
-            <input id="cc-chave" placeholder="CPF, e-mail, telefone, ag\u00EAncia/conta...">
-          </div>
-        </div>
-        <div class="f">
-          <label>Nome do favorecido</label>
-          <input id="cc-fav" placeholder="Nome que aparecer\u00E1 no documento de cobran\u00E7a">
-        </div>
-        <button class="btn btn-p btn-sm" style="margin-top:4px" onclick="addConta()">
-          <i class="ti ti-plus"></i> Adicionar conta
-        </button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><i class="ti ti-download"></i>exportar por categoria</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['producao','financeiro','pedidos','insumos','clientes'].map(a=>`
-          <button class="btn btn-sm" onclick="exportCSV('${a}')"><i class="ti ti-file-spreadsheet"></i> ${a}</button>`).join('')}
-      </div>
-    </div>`;
-}
-
-function toggleVis(k){
-  const cfg=store.get('dtf_vis')||{};
-  cfg[k]=!cfg[k];store.set('dtf_vis',cfg);
-  renderConfig();
-}
-
-function addUser(){
-  const nome=v('un-nome').trim(),login=v('un-login').trim(),senha=v('un-senha').trim();
-  if(!nome||!login||!senha){toast('Preencha todos os campos');return;}
-  const usrs=getUsers();
-  if(usrs.find(u=>u.login===login)){toast('Login j\u00E1 existe');return;}
-  const novoUser={id:Date.now(),nome,login,senha,perfil:v('un-perfil'),maquina:parseInt(v('un-maq')),ativo:true};
-  usrs.push(novoUser);
-  store.set('dtf_users',usrs);
-  _usersCache=usrs;
-  syncUser(novoUser);
-  toast('Usu\u00E1rio adicionado!');renderConfig();
-}
-
-function remUser(id){
-  if(!confirm('Remover?'))return;
-  store.set('dtf_users',getUsers().filter(u=>u.id!==id));
-  toast('Removido');renderConfig();
-}
-
-function toggleAcesso(id){
-  const usrs=getUsers();
-  const idx=usrs.findIndex(u=>u.id===id);
-  if(idx<0) return;
-  const novoEstado = usrs[idx].ativo===false ? true : false;
-  usrs[idx].ativo = novoEstado;
-  store.set('dtf_users',usrs);
-  _usersCache=usrs;
-  syncUser(usrs[idx]);
-  const nome=usrs[idx].nome;
-  toast(novoEstado ? nome+' - acesso liberado OK' : nome+' - acesso bloqueado ');
-  renderConfig();
-}
-
-// =======================================================
-// TEMA
-// =======================================================
-function setTheme(t){
-  document.documentElement.setAttribute('data-theme', t==='light'?'':t);
-  store.set('dtf_theme', t);
-  // Atualizar visual dos bot\u00F5es
-  ['light','dark','dtf'].forEach(id=>{
-    const btn = document.getElementById('theme-'+id);
-    if(!btn) return;
-    btn.style.background = id===t ? 'var(--surface)' : 'transparent';
-    btn.style.boxShadow  = id===t ? 'var(--shadow)' : 'none';
-  });
-}
-
-function initTheme(){
-  const saved = store.get('dtf_theme') || 'light';
-  setTheme(saved);
-}
-
-// =======================================================
-// BACKUP
-// =======================================================
-async function fazerBackup(){
-  const btn = document.getElementById('btn-backup');
-  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Gerando backup...'; }
-
-  toast('Buscando dados... aguarde', 5000);
-
-  try {
-    const [prod, fin, ped, ins, cli_sheet] = await Promise.all([
-      apiGet('producao', true),
-      apiGet('financeiro', true),
-      apiGet('pedidos', true),
-      apiGet('insumos', true),
-      apiGet('clientes', true),
-    ]);
-
-    // Clientes locais (mais completo - tem hist\u00F3rico de pre\u00E7os)
-    const clientes_local = getClientes();
-
-    if(typeof XLSX === 'undefined'){ toast('Erro: biblioteca n\u00E3o carregada'); return; }
-
-    const wb = XLSX.utils.book_new();
-
-    // -- Aba Resumo --
-    const hoje = new Date().toLocaleString('pt-BR');
-    const sumP = (arr,col) => arr.slice(1).reduce((s,r)=>s+(parseFloat(r[col])||0),0);
-    const resumo_data = [
-      ['DTF Pro - Backup de Dados'],
-      ['Gerado em:', hoje],
-      [''],
-      ['Fonte', 'Registros', 'Informa\u00E7\u00E3o'],
-      ['Produ\u00E7\u00E3o',    prod.slice(1).length,    fmt(sumP(prod,5),2)+' m produzidos'],
-      ['Pedidos',     ped.slice(1).length,      'R$ '+sumP(ped,7).toLocaleString('pt-BR',{minimumFractionDigits:2})],
-      ['Financeiro',  fin.slice(1).length,      ''],
-      ['Insumos',     ins.slice(1).length,      'R$ '+sumP(ins,8).toLocaleString('pt-BR',{minimumFractionDigits:2})],
-      ['Clientes',    clientes_local.length,    ''],
-    ];
-    const ws_res = XLSX.utils.aoa_to_sheet(resumo_data);
-    ws_res['!cols'] = [{wch:20},{wch:15},{wch:35}];
-    XLSX.utils.book_append_sheet(wb, ws_res, 'Resumo');
-
-    // -- Aba Clientes (local - mais completo) --
-    const cli_rows = [['ID','Nome','CPF/CNPJ','Telefone','Email','Pre\u00E7o/m','Ciclo','Pgto','Pix','Obs','Data Cad.','Hist\u00F3rico Pre\u00E7os']];
-    clientes_local.forEach(c => {
-      const hist = (c.historicoPrecos||[]).map(h=>`${h.dataVigencia||h.data}: R$${h.preco}`).join(' | ');
-      cli_rows.push([c.id,c.nome,c.doc||'',c.tel||'',c.email||'',c.preco_m||0,c.ciclo||'',c.pgto||'',c.pix||'',c.obs||'',c.dataCad||'',hist]);
-    });
-    const ws_cli = XLSX.utils.aoa_to_sheet(cli_rows);
-    ws_cli['!cols'] = [{wch:12},{wch:30},{wch:16},{wch:16},{wch:24},{wch:12},{wch:12},{wch:14},{wch:28},{wch:20},{wch:12},{wch:50}];
-    XLSX.utils.book_append_sheet(wb, ws_cli, 'Clientes');
-
-    // -- Abas do Google Sheets --
-    const abas = [
-      { dados: prod, nome: 'Producao' },
-      { dados: ped,  nome: 'Pedidos'  },
-      { dados: fin,  nome: 'Financeiro'},
-      { dados: ins,  nome: 'Insumos'  },
-    ];
-
-    abas.forEach(({dados, nome}) => {
-      if(!dados.length) return;
-      const ws = XLSX.utils.aoa_to_sheet(dados);
-      // Larguras autom\u00E1ticas
-      const maxCols = dados[0].length;
-      ws['!cols'] = Array(maxCols).fill({wch:16});
-      XLSX.utils.book_append_sheet(wb, ws, nome);
-    });
-
-    // -- Download --
-    const dataStr = new Date().toLocaleDateString('pt-BR').replace(/\//g,'');
-    const nomeArq = `backup_dtf_${dataStr}.xlsx`;
-    XLSX.writeFile(wb, nomeArq);
-
-    toast('Backup salvo: ' + nomeArq + ' OK', 4000);
-  } catch(e) {
-    toast('Erro no backup: ' + e.message);
-    console.error(e);
-  } finally {
-    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-export"></i> Fazer backup agora'; }
-  }
-}
-
-// =======================================================
-// INIT
-// =======================================================
 window.addEventListener('load',function(){
   initTheme();
-  try{
-    var sess=store.get('dtf_session');
-    if(sess){CU=sess;$('login-page').classList.add('hidden');$('shell').classList.remove('hidden');initShell();}
-  }catch(e){}
-  var lsenha=$('l-senha');
-  if(lsenha) lsenha.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  try{var sess=store.get('dtf_session');if(sess){CU=sess;$('login-page').classList.add('hidden');$('shell').classList.remove('hidden');initShell();}}catch(e){}
+  var ls=$('l-senha');if(ls)ls.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   if(window.innerWidth<768){var mt=$('menu-toggle');if(mt)mt.style.display='flex';}
+  notifyHeight();window.addEventListener('resize',notifyHeight);setTimeout(notifyHeight,500);setTimeout(notifyHeight,1500);
+  try{new MutationObserver(notifyHeight).observe(document.body,{childList:true,subtree:true});}catch(e){}
 });
-
-// -- Expor fun\u00E7\u00F5es globais necess\u00E1rias para onclick --
-const _globals=['doLogin','logout','goNav','toggleMenu','setTheme','syncData',
-  'filtrarClis','abrirFormCliente','editarCli','salvarCli','remCli','verHistCli',
-  'verHistoricoPagamentos','abrirNovoPreco','salvarNovoPreco','filtrarPedidos',
-  'abrirFormPedido','preencherPrecoPedido','calcPed','salvarPedido','finTab',
-  'darBaixa','confirmarBaixa','toggleBaixaParcial','salvarConta','gerarFechamento',
-  'carregarJobsCliente','toggleJobFech','toggleTodosFech','confirmarFechamento',
-  'imprimirFech','salvarPDFFech','enviarWhatsApp','lancarContaReceber',
-  'addConta','remConta','renderListaContas','addUser','remUser','toggleAcesso',
-  'toggleVis','fazerBackup','exportCSV','gerarRelProducao','gerarRelClientes',
-  'gerarRelFinanceiro','gerarRelInsumos','salvarProducao','salvarInsumo','calcIns',
-  'onDropImp','lerArqImp','confirmarImp','enviarAtualizacaoSaldo',
-  'abrirModalAtualizacaoSaldo','selecionarTodos'];
-_globals.forEach(function(fn){
-  try{if(typeof eval(fn)==='function') window[fn]=eval(fn);}catch(e){}
-});
-
-// -- For\u00E7ar altura total no iframe do Google Sites --
-function notifyHeight(){
-  const h = Math.max(
-    document.body.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.scrollHeight,
-    window.innerHeight,
-    800
-  );
-  // Comunicar altura ao Google Sites via postMessage
-  window.parent.postMessage({type:'setHeight', height: h}, '*');
-  // Tamb\u00E9m tentar via frameElement
-  try {
-    if(window.frameElement){
-      window.frameElement.style.height = h + 'px';
-      window.frameElement.style.minHeight = '100vh';
-    }
-  } catch(e){}
-}
-
-// Executar ao carregar e ao redimensionar
-notifyHeight();
-window.addEventListener('resize', notifyHeight);
-// Repetir algumas vezes para garantir ap\u00F3s renderiza\u00E7\u00E3o
-setTimeout(notifyHeight, 500);
-setTimeout(notifyHeight, 1500);
-setTimeout(notifyHeight, 3000);
-
-// Observer para detectar mudan\u00E7as de conte\u00FAdo
-try {
-  new MutationObserver(notifyHeight).observe(
-    document.body, {childList:true, subtree:true}
-  );
-} catch(e){}
-</script>
-
-<!-- XLSX library para importa\u00E7\u00E3o -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
